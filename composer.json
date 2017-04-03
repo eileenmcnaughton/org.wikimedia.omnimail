@@ -1,0 +1,22 @@
+{
+    "require": {
+        "wikimedia/omnimail-silverpop" : "dev-master",
+        "phpseclib/phpseclib":  "~2.0",
+        "league/csv" : "^8.0",
+        "omnimail/omnimail": "^0.3.0",
+        "guzzlehttp/guzzle": "~6.0"
+    },
+    "require-dev" : {
+        "phpunit/phpunit": "^5.7 || ^6.1"
+    },
+    "autoload": {
+        "psr-4": {
+          "Omnimail\\Silverpop\\": "src/"
+        }
+    },
+    "autoload-dev" : {
+        "psr-4" : {
+          "Omnimail\\Silverpop\\Tests\\" : "test/tests"
+        }
+    }
+}
