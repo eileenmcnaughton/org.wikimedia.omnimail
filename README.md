@@ -29,7 +29,7 @@ function does not store statistical data, allowing you to store it yourself.
 
   However, I think collaborating towards a standardised interface is a good thing going forwards. 
   In addition I think we could wind up implementing sending of mailings and that would
-  leverage the interfaces in that class much more.
+  leverage the interfaces in that class much more. I currently have [a PR open against the repo](https://github.com/gabrielbull/omnimail/pull/27)
   
 2. [Omnimail-silverpop](https://github.com/eileenmcnaughton/omnimail-silverpop)  
 
@@ -41,11 +41,34 @@ function does not store statistical data, allowing you to store it yourself.
   the maintainer's consideration of [my pull request](https://github.com/mrmarkfrench/silverpop-php-connector/pull/27). He has recently merged [another pull request](https://github.com/mrmarkfrench/silverpop-php-connector/pull/25)
   
 *Data storage*
-  This extension stores data retrieved in 4 places:
+  This extension stores data retrieved in the following places:
   1. civicrm_mailing table (e.g html & text of emails)
   2. civicrm_mailing_stats table - statistics about emails - provided by extendedmailingstats extension
   3. civicrm_mailing_provider_data - provided by this extension, stores data about mailing recipient
   actions (e.g contact x was sent a mailing on date y or contact z opened a mailing on date u)
   4. civicrm_activity table - separate jobs offer the chance to transfer mailing_provider_data to 
   activities. Depending on size this may only be done for some of the data.
+  5. civicrm_campaign - when retrieving mailings a campaign is created for each of them. The 
+  campaigns can be custom-data-extended for putting extra information on reports. In addition
+  both contributions & activities (& even recurring contributions)can be linked to campaigns, providing 
+  good reporting options.
   
+*APIs*  
+
+The main way to use this extension is by scheduling apis. The following apis are exposed:
+- **Omnimailing.get** - retrieve mailing data (text, stats)
+- **Omnimailing.load** - retrieve mailing data and store to tables (a combination of civicrm_campaign, civicrm_mailing and civicrm_mailing_stats)
+ 
+- **Omnirecipient.get** - retrieve per-recipient-per-action data (Sent, Opened, Opt out)
+- **Omnirecipient.load** - retrieve mailing data and store to civicrm_mailing_provider_data
+- **Omnirecipient.process_unsubscribes**  - process from civicrm_mailing_provider_data to create unsubscribe activities.
+
+e.g drush cvapi omnimailing.load mailing_provider=Silverpop username=xxx password=yyy
+
+*Viewing Data*
+
+The main ways to view data are:
+- report on mailings & statistics at civicrm/report/au.org.greens.extendedmailingstats/extendedmailingstats?reset=1
+- mysql queries on civicrm_mailing_provider_data table
+- activities created against contacts (depending which apis are scheduled)
+- viewing text & html downloaded into mailings.
