@@ -17,7 +17,11 @@ require_once 'vendor/autoload.php';
  */
 function civicrm_api3_omnirecipient_process_unsubscribes($params) {
   $result = CRM_Core_DAO::executeQuery('
-    SELECT * FROM civicrm_mailing_provider_data WHERE event_type = "Opt Out" AND is_civicrm_updated = 0
+    SELECT * FROM civicrm_mailing_provider_data md
+    LEFT JOIN civicrm_contact c ON c.id = md.contact_id
+    WHERE event_type = "Opt Out"
+    AND is_civicrm_updated = 0
+    AND c.id IS NOT NULL
   ');
 
   while ($result->fetch()) {
