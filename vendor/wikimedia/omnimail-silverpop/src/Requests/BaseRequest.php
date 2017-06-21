@@ -7,6 +7,7 @@
  */
 namespace Omnimail\Silverpop\Requests;
 
+use Omnimail\Common\Credentials;
 use Omnimail\Common\Helper;
 use Omnimail\Silverpop\Connector\SilverpopGuzzleConnector;
 use Omnimail\Silverpop\Responses\ResponseInterface;
@@ -60,6 +61,27 @@ abstract class BaseRequest implements RequestInterface
    * @var \GuzzleHttp\Client
    */
   protected $client;
+
+    /**
+     * @var \Omnimail\Common\Credentials
+     */
+  protected $credentials;
+
+    /**
+     * @return Credentials
+     */
+    public function getCredentials()
+    {
+        return $this->credentials;
+    }
+
+    /**
+     * @param Credentials $credentials
+     */
+    public function setCredentials($credentials)
+    {
+        $this->credentials = $credentials;
+    }
 
   /**
    * @return \GuzzleHttp\Client
@@ -146,6 +168,16 @@ abstract class BaseRequest implements RequestInterface
   }
 
     /**
+     * Get a credential parameter.
+     *
+     * @return mixed
+     */
+    public function getCredential($parameter)
+    {
+        return $this->credentials->get($parameter);
+    }
+
+    /**
      * BaseRequest constructor.
      *
      * @param $parameters
@@ -156,7 +188,7 @@ abstract class BaseRequest implements RequestInterface
     if ($this->client) {
       $this->silverPop->setClient($this->client);
     }
-    $this->silverPop->authenticateXml($this->getUsername(), $this->getPassword());
+    $this->silverPop->authenticateXml($this->getCredential('username'), $this->getCredential('password'));
   }
 
   /**

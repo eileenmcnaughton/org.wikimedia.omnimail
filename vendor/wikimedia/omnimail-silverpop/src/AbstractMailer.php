@@ -1,11 +1,20 @@
 <?php
 
-namespace Omnimail\Common;
+namespace Omnimail\Silverpop;
 
 use Omnimail\MailerInterface;
 use Omnimail\Common\Requests\RequestInterface;
-use Omnimail\Common\Credentials;
+use Omnimail\Silverpop\Credentials;
 
+/**
+ * Class AbstractMailer
+ *
+ * This class is per the pr https://github.com/gabrielbull/omnimail/pull/27
+ *
+ * If that is merged this can go.
+ *
+ * @package Omnimail\Silverpop
+ */
 abstract class AbstractMailer implements MailerInterface
 {
     /**
@@ -101,7 +110,8 @@ abstract class AbstractMailer implements MailerInterface
      *       'engage_server' => array('type' => 'String', 'required' => FALSE, 'default' => 4),
      *   );
      */
-    protected function getCredentialFields() {
+    public function getCredentialFields()
+    {
         return array();
     }
 }
