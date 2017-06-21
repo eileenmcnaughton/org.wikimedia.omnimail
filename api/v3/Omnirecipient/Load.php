@@ -21,7 +21,7 @@ function civicrm_api3_omnirecipient_load($params) {
       foreach ($recipients as $recipient) {
         $insertValues = array(
           1 => array((string) $recipient->getContactIdentifier(), 'String'),
-          2 => array((string) $recipient->getMailingIdentifier(), 'String'),
+          2 => array((string) CRM_Utils_Array::value('mailing_prefix', $params, '') . $recipient->getMailingIdentifier(), 'String'),
           3 => array((string) $recipient->getEmail(), 'String'),
           4 => array((string) $recipient->getRecipientAction(), 'String'),
           5 => array((string) $recipient->getRecipientActionIsoDateTime(), 'String'),
