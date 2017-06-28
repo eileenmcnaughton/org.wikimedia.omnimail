@@ -1,6 +1,6 @@
 <?php
 
-use Civi\Test\HeadlessInterface;
+use Civi\Test\EndToEndInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
 use GuzzleHttp\Client;
@@ -22,12 +22,12 @@ use GuzzleHttp\Psr7\Response;
  *
  * @group headless
  */
-class OmnimailingGetTest extends \PHPUnit_Framework_TestCase implements HeadlessInterface, HookInterface, TransactionalInterface {
+class OmnimailingGetTest extends \PHPUnit_Framework_TestCase implements EndToEndInterface, TransactionalInterface {
 
   public function setUpHeadless() {
     // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
     // See: https://github.com/civicrm/org.civicrm.testapalooza/blob/master/civi-test.md
-    return \Civi\Test::headless()
+    return \Civi\Test::e2e()
       ->installMe(__DIR__)
       ->apply();
   }
