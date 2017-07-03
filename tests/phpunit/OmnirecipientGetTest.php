@@ -23,7 +23,7 @@ require_once __DIR__ . '/OmnimailBaseTestClass.php';
  *
  * @group e2e
  */
-class OmnimailingGetTest extends OmnimailBaseTestClass implements EndToEndInterface, TransactionalInterface {
+class OmnirecipientGetTest extends OmnimailBaseTestClass implements EndToEndInterface, TransactionalInterface {
 
   public function setUpHeadless() {
     // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
@@ -44,16 +44,19 @@ class OmnimailingGetTest extends OmnimailBaseTestClass implements EndToEndInterf
   /**
    * Example: Test that a version is returned.
    */
-  public function testOmnimailingGet() {
+  public function testOmnirecipientGet() {
     $responses = array(
-      file_get_contents(__DIR__ . '/Responses/MailingGetResponse1.txt'),
-      file_get_contents(__DIR__ . '/Responses/AggregateGetResponse1.txt'),
-      file_get_contents(__DIR__ . '/Responses/GetMailingTemplateResponse.txt'),
-      file_get_contents(__DIR__ . '/Responses/GetMailingTemplateResponse2.txt'),
-      file_get_contents(__DIR__ . '/Responses/GetMailingTemplateResponse2.txt'),
+      file_get_contents(__DIR__ . '/Responses/RawRecipientDataExportResponse.txt'),
+      file_get_contents(__DIR__ . '/Responses/jobStatusCompleteResponse.txt'),
     );
-    $mailings = civicrm_api3('Omnimailing', 'get', array('mail_provider' => 'Silverpop', 'client' => $this->getMockRequest($responses), 'username' => 'Donald', 'password' => 'quack'));
-    $this->assertEquals(2, $mailings['count']);
+    //Raw Recipient Data Export Jul 02 2017 21-46-49 PM 758.zip
+    copy(__DIR__ . '/Responses/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv', sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv');
+    fopen(sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv.complete', 'c');
+
+    $result = civicrm_api3('Omnirecipient', 'get', array('mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => array('limit' => 3), 'client' => $this->getMockRequest($responses)));
+    $this->assertEquals(3, $result['count']);
+    $this->assertEquals('bob@example.com', $result['values'][0]['email']);
+    $this->assertEquals('123', $result['values'][0]['contact_id']);
   }
 
 }

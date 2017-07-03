@@ -87,6 +87,20 @@ function omnimail_civicrm_managed(&$entities) {
 }
 
 /**
+ * Implements hook_civicrm_entityTypes.
+ *
+ * @param array $entityTypes
+ *   Registered entity types.
+ */
+function omnimail_civicrm_entityTypes(&$entityTypes) {
+  $entityTypes['CRM_Omnimail_DAO_MailingProviderData'] = array(
+    'name' => 'MailingProviderData',
+    'class' => 'CRM_Omnimail_DAO_MailingProviderData',
+    'table' => 'civicrm_maiing_provider_data',
+  );
+}
+
+/**
  * Implements hook_civicrm_caseTypes().
  *
  * Generate a list of case-types.

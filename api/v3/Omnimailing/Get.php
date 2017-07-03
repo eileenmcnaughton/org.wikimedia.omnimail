@@ -19,7 +19,7 @@ use Omnimail\Omnimail;
  * @return array
  */
 function civicrm_api3_omnimailing_get($params) {
-  $mailerCredentials = array('UserName' => $params['username'], 'Password' => $params['password']);
+  $mailerCredentials = array('username' => $params['username'], 'password' => $params['password']);
   if (!empty($params['client'])) {
     $mailerCredentials['client'] = $params['client'];
   }

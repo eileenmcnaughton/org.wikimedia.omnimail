@@ -177,7 +177,7 @@ class CRM_Omnimail_DAO_MailingProviderData extends CRM_Core_DAO {
         ) ,
         'is_civicrm_updated' => array(
           'name' => 'is_civicrm_updated',
-          'type' => CRM_Utils_Type::T_BOOL,
+          'type' => CRM_Utils_Type::T_BOOLEAN,
           'description' => 'Has the action been synchronised through to CiviCRM',
           'table_name' => 'civicrm_mailing_provider_data',
           'entity' => 'MailingProviderData',

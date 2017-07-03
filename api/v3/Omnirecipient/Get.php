@@ -20,16 +20,22 @@ use Omnimail\Omnimail;
  */
 function civicrm_api3_omnirecipient_get($params) {
   $result = CRM_Omnimail_Omnirecipients::getResult($params);
-
-  if ($result->isCompleted()) {
-    $values = $result->getData();
-    return civicrm_api3_create_success($values);
+  $options = _civicrm_api3_get_options_from_params($params);
+  $values = array();
+  foreach ($result as $recipient) {
+    $values[] = array(
+      'contact_identifier' => (string) $recipient->getContactIdentifier(),
+      'mailing_identifier' => (string) CRM_Utils_Array::value('mailing_prefix', $params, '') . $recipient->getMailingIdentifier(),
+      'email' => (string) $recipient->getEmail(),
+      'event_type' => (string) $recipient->getRecipientAction(),
+      'recipient_action_datetime' => (string) $recipient->getRecipientActionIsoDateTime(),
+      'contact_id' => (string) $recipient->getContactReference(),
+    );
+    if ($options['limit'] > 0 && count($values) === (int) $options['limit']) {
+      break;
+    }
   }
-  else {
-    $outcome = civicrm_api3_create_success(array());
-    $outcome['retrieval_criteria'] = $result->getRetrievalParameters();
-    return $outcome;
-  }
+  return civicrm_api3_create_success($values);
 }
 
 /**

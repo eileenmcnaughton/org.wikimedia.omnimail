@@ -33,7 +33,7 @@ trait Downloader {
   public function downloadCsv() {
     $filePath = $this->getDownloadDirectory() . '/' . $this->getFileName();
     $csvFilePath = str_replace('.zip', '.csv', $filePath);
-    if (!file_exists($filePath) && !file_exists($csvFilePath)) {
+    if ((!file_exists($filePath) && !file_exists($csvFilePath)) || !file_exists($csvFilePath . '.complete')) {
       $this->downloadFile($this->getFileName(), $filePath);
     }
     if (!file_exists($csvFilePath) && substr($filePath, -4) === '.zip') {
