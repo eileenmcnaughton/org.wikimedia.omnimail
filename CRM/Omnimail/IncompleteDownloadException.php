@@ -19,4 +19,8 @@ class CRM_Omnimail_IncompleteDownloadException extends CRM_Core_Exception {
   public function getRetrievalParameters() {
     return $this->errorData['retrieval_parameters'];
   }
+
+  public function getEndTimestamp() {
+    return $this->errorData['end_date'];
+  }
 }

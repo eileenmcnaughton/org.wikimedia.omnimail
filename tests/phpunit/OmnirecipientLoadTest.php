@@ -45,15 +45,9 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass implements EndToEndInt
    * Example: Test that a version is returned.
    */
   public function testOmnirecipientLoad() {
-    $responses = array(
-      file_get_contents(__DIR__ . '/Responses/RawRecipientDataExportResponse.txt'),
-      file_get_contents(__DIR__ . '/Responses/jobStatusCompleteResponse.txt'),
-    );
-    //Raw Recipient Data Export Jul 02 2017 21-46-49 PM 758.zip
-    copy(__DIR__ . '/Responses/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv', sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv');
-    fopen(sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv.complete', 'c');
+    $client = $this->setupSuccessfulDownloadClient();
 
-    civicrm_api3('Omnirecipient', 'load', array('mail_provider' => 'Silverpop', 'username' => 'Donald', 'password' => 'Duck', 'debug' => 1, 'client' => $this->getMockRequest($responses)));
+    civicrm_api3('Omnirecipient', 'load', array('mail_provider' => 'Silverpop', 'username' => 'Donald', 'password' => 'Duck', 'debug' => 1, 'client' => $client));
     $providers = CRM_Core_DAO::executeQuery('SELECT * FROM civicrm_mailing_provider_data')->fetchAll();
     $this->assertEquals(array(
       0 => array(
@@ -93,6 +87,8 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass implements EndToEndInt
         'is_civicrm_updated' => '0',
       ),
     ), $providers);
+    $jobSettings = CRM_Omnimail_Omnirecipients::getJobSettings(array('mail_provider' => 'Silverpop'));
+    $this->assertEquals(array ('last_timestamp' => '2017-03-03 00:00:00'), $jobSettings);
 
   }
 
@@ -100,6 +96,11 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass implements EndToEndInt
    * Test when download does not complete in time.
    */
   public function testOmnirecipientLoadIncomplete() {
+    civicrm_api3('Setting', 'create', array(
+      'omnimail_omnirecipient_load' => array(
+        'Silverpop' => array('last_timestamp' => '2017-02-24'),
+      ),
+    ));
     $responses = array(
       file_get_contents(__DIR__ . '/Responses/RawRecipientDataExportResponse.txt'),
     );
@@ -107,14 +108,97 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass implements EndToEndInt
       $responses[] = file_get_contents(__DIR__ . '/Responses/jobStatusWaitingResponse.txt');
     }
     civicrm_api3('setting', 'create', array('omnimail_job_retry_interval' => 0.01));
-    civicrm_api3('Omnirecipient', 'load', array('mail_provider' => 'Silverpop', 'username' => 'Donald', 'password' => 'Duck', 'debug' => 1, 'client' => $this->getMockRequest($responses)));
+    civicrm_api3('Omnirecipient', 'load', array('mail_provider' => 'Silverpop', 'username' => 'Donald', 'password' => 'Duck', 'client' => $this->getMockRequest($responses)));
     $this->assertEquals(0, CRM_Core_DAO::singleValueQuery('SELECT  count(*) FROM civicrm_mailing_provider_data'));
 
-    $jobSettings = CRM_Omnimail_Omnirecipients::getJobSettings(array('mail_provider' => 'Silverpop'));
     $this->assertEquals(array(
+      'last_timestamp' => '2017-02-24',
+      'retrieval_parameters' => array(
       'jobId' => '101569750',
       'filePath' => 'Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.zip',
-    ), $jobSettings['retrieval_parameters']);
+      ),
+      'progress_end_date' => '2017-03-03 00:00:00',
+    ), CRM_Omnimail_Omnirecipients::getJobSettings(array('mail_provider' => 'Silverpop')));
+  }
+
+  /**
+   * After completing an incomplete download the end date should be the progress end date.
+   */
+  public function testCompleteIncomplete() {
+    civicrm_api3('setting', 'create', array(
+      'omnimail_omnirecipient_load' => array(
+        'Silverpop' => array(
+          'last_timestamp' => '2017-02-24',
+          'retrieval_parameters' => array(
+            'jobId' => '101569750',
+            'filePath' => 'Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.zip',
+          ),
+          'progress_end_date' => '2017-03-03 00:00:00',
+        ),
+      ),
+    ));
+    $client = $this->setupSuccessfulDownloadClient();
+    civicrm_api3('Omnirecipient', 'load', array('mail_provider' => 'Silverpop', 'username' => 'Donald', 'password' => 'Duck', 'client' => $client));
+    $this->assertEquals(4, CRM_Core_DAO::singleValueQuery('SELECT COUNT(*) FROM civicrm_mailing_provider_data'));
+    $this->assertEquals(array(
+      'last_timestamp' => '2017-03-03 00:00:00',
+    ), CRM_Omnimail_Omnirecipients::getJobSettings(array('mail_provider' => 'Silverpop')));
+  }
+
+  /**
+   * An exception should be thrown if the download is incomplete & we pass in a timestamp.
+   *
+   * This is because the incomplete download will continue, and we will incorrectly
+   * think it is taking our parameters.
+   *
+   */
+  public function testIncompleteRejectTimestamps() {
+    civicrm_api3('setting', 'create', array(
+      'omnimail_omnirecipient_load' => array(
+        'Silverpop' => array(
+          'last_timestamp' => '2017-02-24',
+          'retrieval_parameters' => array(
+            'jobId' => '101569750',
+            'filePath' => 'Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.zip',
+          ),
+          'progress_end_date' => '2017-03-03 00:00:00',
+        ),
+      ),
+    ));
+    try {
+      civicrm_api3('Omnirecipient', 'load', array(
+        'mail_provider' => 'Silverpop',
+        'start_date' => 'last week',
+        'username' => 'Donald',
+        'password' => 'Duck',
+        'client' => $this->getMockRequest(array())
+      ));
+    }
+    catch (Exception $e) {
+      $this->assertEquals('A prior retrieval is in progress. Do not pass in dates to complete a retrieval', $e->getMessage());
+      return;
+    }
+    $this->fail('No exception');
+  }
+
+  /**
+   * @return \GuzzleHttp\Client
+   */
+  protected function setupSuccessfulDownloadClient() {
+    $responses = array(
+      file_get_contents(__DIR__ . '/Responses/RawRecipientDataExportResponse.txt'),
+      file_get_contents(__DIR__ . '/Responses/jobStatusCompleteResponse.txt'),
+    );
+    //Raw Recipient Data Export Jul 02 2017 21-46-49 PM 758.zip
+    copy(__DIR__ . '/Responses/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv', sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv');
+    fopen(sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv.complete', 'c');
+    civicrm_api3('Setting', 'create', array(
+      'omnimail_omnirecipient_load' => array(
+        'Silverpop' => array('last_timestamp' => '2017-02-24'),
+      ),
+    ));
+    $client = $this->getMockRequest($responses);
+    return $client;
   }
 
 }

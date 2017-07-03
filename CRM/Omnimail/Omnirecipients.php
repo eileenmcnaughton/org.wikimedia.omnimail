@@ -35,13 +35,14 @@ class CRM_Omnimail_Omnirecipients {
 
     $request = Omnimail::create($params['mail_provider'], $mailerCredentials)->getRecipients();
 
-    $startDate = CRM_Utils_Array::value('start_date', $params, CRM_Utils_Array::value('last_timestamp', $jobSettings));
-    $endDate = CRM_Utils_Array::value('end_date', $params, date('Y-m-d H:i:s', strtotime(CRM_Utils_Array::value('omnimail_job_default_time_interval', $settings, ' + 1 day'), strtotime($startDate))));
+    $startDate = CRM_Utils_Array::value('start_date', $params, (empty($jobSettings['last_timestamp']) ? '450 days ago' : $jobSettings['last_timestamp']));
+    $adjustment = CRM_Utils_Array::value('omnimail_job_default_time_interval', $settings, ' + 1 day');
+    $endDate = CRM_Utils_Array::value('end_date', $params, date('Y-m-d H:i:s', strtotime($adjustment, strtotime($startDate))));
 
     if (isset($jobSettings['retrieval_parameters'])) {
-      // If there is an incomplete job get that.
-      // @todo think about this a bit more - ie. we are ignoring date parameters here
-      // and assuming it is a continuation
+      if (!empty($params['end_date']) || !empty($params['start_date'])) {
+        throw new CiviCRM_API3_Exception('A prior retrieval is in progress. Do not pass in dates to complete a retrieval');
+      }
       $request->setRetrievalParameters($jobSettings['retrieval_parameters']);
     }
     elseif ($startDate) {
@@ -67,6 +68,7 @@ class CRM_Omnimail_Omnirecipients {
     throw new CRM_Omnimail_IncompleteDownloadException('Download incomplete', 0, array(
       'retrieval_parameters' => $result->getRetrievalParameters(),
       'mail_provider' => $params['mail_provider'],
+      'end_date' => $endDate,
     ));
 
   }

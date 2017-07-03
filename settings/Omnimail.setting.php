@@ -78,7 +78,7 @@ return array(
     'group' => 'omnimail',
     'name' => 'omnimail_job_default_time_interval',
     'type' => 'Array',
-    'default' => 15,
+    'default' => '7 days',
     'title' => 'Omnimail Default Time Interval',
     'is_domain' => '1',
     'is_contact' => 0,

@@ -65,6 +65,7 @@ function civicrm_api3_omnirecipient_load($params) {
         $params['mail_provider'] => array(
           'last_timestamp' => $jobSettings['last_timestamp'],
           'retrieval_parameters' => $e->getRetrievalParameters(),
+          'progress_end_date' => $e->getEndTimestamp(),
         ),
       ),
     ));
