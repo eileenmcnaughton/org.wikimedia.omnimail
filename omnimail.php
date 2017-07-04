@@ -137,6 +137,32 @@ function omnimail_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
 }
 
 /**
+ * @param string $tabsetName
+ * @param array $tabs
+ * @param array $context
+ */
+function omnimail_civicrm_tabset($tabsetName, &$tabs, $context) {
+  if ($tabsetName == 'civicrm/contact/view') {
+    $contactID = $context['contact_id'];
+      $url = CRM_Utils_System::url('civicrm/event/manage/volunteer',
+        "reset=1&snippet=5&force=1&id=$eventID&action=update&component=event");
+      //add a new Volunteer tab along with url
+      $tab['mailing_data'] = array(
+        'title' => ts('Mailings'),
+        'link' => $url,
+        'valid' => 1,
+        'active' => 1,
+        'current' => FALSE,
+      );
+    //Insert this tab into position 4
+    $tabs = array_merge(
+      array_slice($tabs, 0, 4),
+      $tab,
+      array_slice($tabs, 4)
+    );
+  }
+}
+/**
  * Keep mailing provider data out of log tables.
  *
  * @param array $logTableSpec

@@ -73,7 +73,7 @@ class CRM_Omnimail_DAO_MailingProviderData extends CRM_Core_DAO {
    *
    * @var string
    */
-  public $recipient_action_type;
+  public $event_type;
   /**
    * When the action happened
    *
@@ -144,8 +144,8 @@ class CRM_Omnimail_DAO_MailingProviderData extends CRM_Core_DAO {
           'bao' => 'CRM_Omnimail_DAO_MailingProviderData',
           'localizable' => 0,
         ) ,
-        'recipient_action_type' => array(
-          'name' => 'recipient_action_type',
+        'event_type' => array(
+          'name' => 'event_type',
           'type' => CRM_Utils_Type::T_STRING,
           'title' => ts('Recipient Action Type') ,
           'description' => 'Type of action',

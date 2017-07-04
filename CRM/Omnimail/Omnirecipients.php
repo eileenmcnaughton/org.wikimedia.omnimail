@@ -2,7 +2,6 @@
 
 use Omnimail\Silverpop\Responses\RecipientsResponse;
 use Omnimail\Omnimail;
-use Omnimail\Silverpop\Credentials;
 
 /**
  * Created by IntelliJ IDEA.
@@ -22,32 +21,30 @@ class CRM_Omnimail_Omnirecipients {
    * @param array $params
    *
    * @return \Omnimail\Silverpop\Responses\RecipientsResponse
+   *
    * @throws \CRM_Omnimail_IncompleteDownloadException
+   * @throws \CiviCRM_API3_Exception
    */
   static function getResult($params) {
-    $jobSettings = self::getJobSettings($params);
-    $settings = self::getSettings();
+    $jobSettings = CRM_Omnimail_Helper::getJobSettings($params);
+    $settings = CRM_Omnimail_Helper::getSettings();
 
-    $mailerCredentials = array('credentials' => new Credentials(array('username' => $params['username'], 'password' => $params['password'])));
-    if (!empty($params['client'])) {
-      $mailerCredentials['client'] = $params['client'];
-    }
+    $mailerCredentials = CRM_Omnimail_Helper::getCredentials($params);
 
     $request = Omnimail::create($params['mail_provider'], $mailerCredentials)->getRecipients();
 
-    $startDate = CRM_Utils_Array::value('start_date', $params, (empty($jobSettings['last_timestamp']) ? '450 days ago' : $jobSettings['last_timestamp']));
-    $adjustment = CRM_Utils_Array::value('omnimail_job_default_time_interval', $settings, ' + 1 day');
-    $endDate = CRM_Utils_Array::value('end_date', $params, date('Y-m-d H:i:s', strtotime($adjustment, strtotime($startDate))));
+    $startTimestamp = self::getStartTimestamp($params, $jobSettings);
+    $endTimestamp = self::getEndTimestamp(CRM_Utils_Array::value('end_date', $params), $settings, $startTimestamp);
 
     if (isset($jobSettings['retrieval_parameters'])) {
       if (!empty($params['end_date']) || !empty($params['start_date'])) {
-        throw new CiviCRM_API3_Exception('A prior retrieval is in progress. Do not pass in dates to complete a retrieval');
+        throw new API_Exception('A prior retrieval is in progress. Do not pass in dates to complete a retrieval');
       }
       $request->setRetrievalParameters($jobSettings['retrieval_parameters']);
     }
-    elseif ($startDate) {
-      $request->setStartTimeStamp(strtotime($startDate));
-      $request->setEndTimeStamp(strtotime($endDate));
+    elseif ($startTimestamp) {
+      $request->setStartTimeStamp($startTimestamp);
+      $request->setEndTimeStamp($endTimestamp);
     }
 
     $result = $request->getResponse();
@@ -56,7 +53,7 @@ class CRM_Omnimail_Omnirecipients {
         $data = $result->getData();
         civicrm_api3('Setting', 'create', array(
           'omnimail_omnirecipient_load' => array(
-            $params['mail_provider'] => array('last_timestamp' => $endDate),
+            $params['mail_provider'] => array('last_timestamp' => $endTimestamp),
           ),
         ));
         return $data;
@@ -68,27 +65,47 @@ class CRM_Omnimail_Omnirecipients {
     throw new CRM_Omnimail_IncompleteDownloadException('Download incomplete', 0, array(
       'retrieval_parameters' => $result->getRetrievalParameters(),
       'mail_provider' => $params['mail_provider'],
-      'end_date' => $endDate,
+      'end_date' => $endTimestamp,
     ));
 
   }
 
   /**
-   * @param $params
-   * @return array
+   * Get the timestamp to start from.
+   *
+   * @param array $params
+   * @param array $jobSettings
+   *
+   * @return string
    */
-  public static function getJobSettings($params) {
-    $settings = self::getSettings();
-    $jobSettings = CRM_Utils_Array::value($params['mail_provider'], $settings['omnimail_omnirecipient_load'], array());
-    return $jobSettings;
+  protected static function getStartTImestamp($params, $jobSettings) {
+    if (isset($params['start_date'])) {
+      return strtotime($params['start_date']);
+    }
+    if (!empty($jobSettings['last_timestamp'])) {
+      return $jobSettings['last_timestamp'];
+    }
+    return strtotime('450 days ago');
   }
 
   /**
-   * @return array|mixed
+   * Get the end timestamp, bearing in mind our poor ability to read the future.
+   *
+   * @param string $passedInEndDate
+   * @param array $settings
+   * @param string $startTimestamp
+   *
+   * @return false|int
    */
-  protected static function getSettings() {
-    $settings = civicrm_api3('Setting', 'get', array('group' => 'omnimail'));
-    $settings = reset($settings['values']);
-    return $settings;
+  protected static function getEndTimestamp($passedInEndDate, $settings, $startTimestamp) {
+    if ($passedInEndDate) {
+      $endTimeStamp = strtotime($passedInEndDate);
+    }
+    else {
+      $adjustment = CRM_Utils_Array::value('omnimail_job_default_time_interval', $settings, ' + 1 day');
+      $endTimeStamp = strtotime($adjustment, $startTimestamp);
+    }
+    return ($endTimeStamp > strtotime('now') ? strtotime('now') : $endTimeStamp);
   }
+
 }

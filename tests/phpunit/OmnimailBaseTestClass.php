@@ -45,4 +45,24 @@ class OmnimailBaseTestClass extends \PHPUnit_Framework_TestCase implements EndTo
     return new Client(array('handler' => $handler));
   }
 
+
+  /**
+   * @return \GuzzleHttp\Client
+   */
+  protected function setupSuccessfulDownloadClient() {
+    $responses = array(
+      file_get_contents(__DIR__ . '/Responses/RawRecipientDataExportResponse.txt'),
+      file_get_contents(__DIR__ . '/Responses/jobStatusCompleteResponse.txt'),
+    );
+    //Raw Recipient Data Export Jul 02 2017 21-46-49 PM 758.zip
+    copy(__DIR__ . '/Responses/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv', sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv');
+    fopen(sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv.complete', 'c');
+    civicrm_api3('Setting', 'create', array(
+      'omnimail_omnirecipient_load' => array(
+        'Silverpop' => array('last_timestamp' => '1487890800'),
+      ),
+    ));
+    $client = $this->getMockRequest($responses);
+    return $client;
+  }
 }

@@ -19,11 +19,7 @@ use Omnimail\Omnimail;
  * @return array
  */
 function civicrm_api3_omnimailing_get($params) {
-  $mailerCredentials = array('username' => $params['username'], 'password' => $params['password']);
-  if (!empty($params['client'])) {
-    $mailerCredentials['client'] = $params['client'];
-  }
-  $mailer = Omnimail::create($params['mail_provider'], $mailerCredentials);
+  $mailer = Omnimail::create($params['mail_provider'], CRM_Omnimail_Helper::getCredentials($params));
   $mailerParameters = array(
     'StartTimeStamp' => strtotime($params['start_date']),
     'EndTimeStamp' => strtotime($params['end_date']),

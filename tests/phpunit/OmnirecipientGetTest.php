@@ -45,15 +45,9 @@ class OmnirecipientGetTest extends OmnimailBaseTestClass implements EndToEndInte
    * Example: Test that a version is returned.
    */
   public function testOmnirecipientGet() {
-    $responses = array(
-      file_get_contents(__DIR__ . '/Responses/RawRecipientDataExportResponse.txt'),
-      file_get_contents(__DIR__ . '/Responses/jobStatusCompleteResponse.txt'),
-    );
-    //Raw Recipient Data Export Jul 02 2017 21-46-49 PM 758.zip
-    copy(__DIR__ . '/Responses/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv', sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv');
-    fopen(sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv.complete', 'c');
+    $client = $this->setupSuccessfulDownloadClient();
 
-    $result = civicrm_api3('Omnirecipient', 'get', array('mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => array('limit' => 3), 'client' => $this->getMockRequest($responses)));
+    $result = civicrm_api3('Omnirecipient', 'get', array('mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => array('limit' => 3), 'client' => $client));
     $this->assertEquals(3, $result['count']);
     $this->assertEquals('bob@example.com', $result['values'][0]['email']);
     $this->assertEquals('123', $result['values'][0]['contact_id']);
