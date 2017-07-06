@@ -9,6 +9,7 @@ namespace Omnimail\Silverpop\Responses;
 
 use phpseclib\Net\Sftp;
 use League\Csv\Reader;
+use Omnimail\Silverpop\Responses\Contact;
 
 class GroupMembersResponse extends BaseResponse
 {
@@ -124,13 +125,16 @@ class GroupMembersResponse extends BaseResponse
       if (isset($row['email'])) {
         $row['email'] = addslashes($row['email']);
       }
-      if (isset($row['recipient_action_timestamp'])) {
-        $row['recipient_action_timestamp'] = strtotime($row['recipient_action_timestamp']);
+      if (isset($row['opt_in_date'])) {
+        $row['opt_in_timestamp'] = strtotime($row['opt_in_date']);
+      }
+      if (isset($row['opted_out_date'])) {
+        $row['opted_out_timestamp'] = strtotime($row['opted_out_date']);
       }
       if (isset($row[$this->contactReferenceField])) {
         $row->contactIdentifier = $row[$this->contactReferenceField];
       }
-      return new Recipient($row);
+      return new Contact($row);
     };
     $keys = (array) $this->normalizeKeys($headerRow);
     $results = $this->reader->fetchAssoc($keys, $formatFunction);
@@ -159,11 +163,6 @@ class GroupMembersResponse extends BaseResponse
   public function normalizeKeys($csvHeaders) {
     $newHeaders = array();
     $normalizedKeys = array(
-      'Recipient Id' => 'contact_identifier',
-      'Mailing Id' => 'mailing_identifier',
-      'Campaign Id' => 'campaign_identifier',
-      'Event Timestamp' => 'recipient_action_timestamp',
-      'Event_Type' => 'receipient_action',
       'Email' => 'email',
     );
     foreach ($csvHeaders as $csvHeader) {

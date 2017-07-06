@@ -20,11 +20,12 @@ function civicrm_api3_omnigroupmember_get($params) {
   $values = array();
   foreach ($result as $recipient) {
     $values[] = array(
-      'contact_identifier' => (string) $recipient->getContactIdentifier(),
-      'mailing_identifier' => (string) CRM_Utils_Array::value('mailing_prefix', $params, '') . $recipient->getMailingIdentifier(),
       'email' => (string) $recipient->getEmail(),
-      'event_type' => (string) $recipient->getRecipientAction(),
-      'recipient_action_datetime' => (string) $recipient->getRecipientActionIsoDateTime(),
+      'is_opt_out' => (string) $recipient->isOptOut(),
+      'opt_in_date' => (string) $recipient->getOptInIsoDateTime(),
+      'opt_in_source' => (string) $recipient->getOptInSource(),
+      'opt_out_source' => (string) $recipient->getOptOutSource(),
+      'opt_out_date' => (string) $recipient->getOptOutIsoDateTime(),
       'contact_id' => (string) $recipient->getContactReference(),
     );
     if ($options['limit'] > 0 && count($values) === (int) $options['limit']) {

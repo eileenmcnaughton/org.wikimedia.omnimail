@@ -51,6 +51,11 @@ class OmnigroupmemberGetTest extends OmnimailBaseTestClass implements EndToEndIn
     $this->assertEquals(3, $result['count']);
     $this->assertEquals('eric@example.com', $result['values'][0]['email']);
     $this->assertEquals('', $result['values'][0]['contact_id']);
+    $this->assertEquals('2016-10-18 20:01:00', $result['values'][0]['opt_in_date']);
+    $this->assertEquals('2017-07-04 11:11:00', $result['values'][0]['opt_out_date']);
+    $this->assertEquals('Added by WebForms', $result['values'][0]['opt_in_source']);
+    $this->assertEquals('Opt out via email opt out.', $result['values'][0]['opt_out_source']);
+
   }
 
 
