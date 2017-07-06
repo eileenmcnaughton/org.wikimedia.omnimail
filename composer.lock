@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "d490a8881f56a32d4554dc0535dd60c0",
+    "content-hash": "a9d4d8a69c31838afc67f3e06c340740",
     "packages": [
         {
             "name": "guzzlehttp/guzzle",
@@ -246,22 +246,23 @@
         },
         {
             "name": "mrmarkfrench/silverpop-php-connector",
-            "version": "1.2.3",
+            "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mrmarkfrench/silverpop-php-connector.git",
-                "reference": "7c8ace4c4a785f9961d4ccfa2308acf8450e1387"
+                "reference": "61b1020f0b0daab01f175f13b3defd17e1b70b93"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mrmarkfrench/silverpop-php-connector/zipball/7c8ace4c4a785f9961d4ccfa2308acf8450e1387",
-                "reference": "7c8ace4c4a785f9961d4ccfa2308acf8450e1387",
+                "url": "https://api.github.com/repos/mrmarkfrench/silverpop-php-connector/zipball/61b1020f0b0daab01f175f13b3defd17e1b70b93",
+                "reference": "61b1020f0b0daab01f175f13b3defd17e1b70b93",
                 "shasum": ""
             },
             "require": {
                 "ext-curl": "*",
                 "ext-xml": "*",
-                "php": ">=5.3.0"
+                "php": ">=5.3.0",
+                "phpseclib/phpseclib": "~2.0"
             },
             "type": "library",
             "autoload": {
@@ -283,11 +284,11 @@
             "keywords": [
                 "Silverpop"
             ],
-            "time": "2015-08-11T20:48:15+00:00"
+            "time": "2017-05-31 01:23:37"
         },
         {
             "name": "omnimail/omnimail",
-            "version": "0.3.0",
+            "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/gabrielbull/omnimail.git",
@@ -355,7 +356,7 @@
                 "sendgrid",
                 "sendinblue"
             ],
-            "time": "2017-05-15T13:50:56+00:00"
+            "time": "2017-05-15 13:50:56"
         },
         {
             "name": "paragonie/random_compat",
@@ -706,10 +707,16 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/eileenmcnaughton/omnimail-silverpop.git",
-                "reference": "ab32d60e3e44631c27f5e3880b7757c15b3827bb"
+                "reference": "e06e50192ae17fe93f1045ee7562aa286272cbcc"
             },
             "require": {
-                "mrmarkfrench/silverpop-php-connector": "*"
+                "league/csv": "^8.0",
+                "mrmarkfrench/silverpop-php-connector": "dev-master",
+                "omnimail/omnimail": "dev-master",
+                "phpseclib/phpseclib": "~2.0"
+            },
+            "require-dev": {
+                "guzzlehttp/guzzle": "*"
             },
             "type": "library",
             "autoload": {
@@ -719,7 +726,7 @@
             },
             "autoload-dev": {
                 "psr-4": {
-                    "Omnimail\\Tests\\": "test/tests"
+                    "Omnimail\\Silverpop\\Tests\\": "test/tests"
                 }
             },
             "license": [
@@ -739,7 +746,7 @@
                 "omnimail",
                 "silverpop"
             ],
-            "time": "2017-05-03 02:53:54"
+            "time": "2017-07-05 04:12:48"
         }
     ],
     "packages-dev": [
@@ -1381,16 +1388,16 @@
         },
         {
             "name": "phpunit/phpunit-mock-objects",
-            "version": "3.4.3",
+            "version": "3.4.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit-mock-objects.git",
-                "reference": "3ab72b65b39b491e0c011e2e09bb2206c2aa8e24"
+                "reference": "a23b761686d50a560cc56233b9ecf49597cc9118"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit-mock-objects/zipball/3ab72b65b39b491e0c011e2e09bb2206c2aa8e24",
-                "reference": "3ab72b65b39b491e0c011e2e09bb2206c2aa8e24",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit-mock-objects/zipball/a23b761686d50a560cc56233b9ecf49597cc9118",
+                "reference": "a23b761686d50a560cc56233b9ecf49597cc9118",
                 "shasum": ""
             },
             "require": {
@@ -1436,7 +1443,7 @@
                 "mock",
                 "xunit"
             ],
-            "time": "2016-12-08T20:27:08+00:00"
+            "time": "2017-06-30T09:13:00+00:00"
         },
         {
             "name": "sebastian/code-unit-reverse-lookup",
@@ -1953,16 +1960,16 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v3.3.2",
+            "version": "v3.3.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "9752a30000a8ca9f4b34b5227d15d0101b96b063"
+                "reference": "1f93a8d19b8241617f5074a123e282575b821df8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/9752a30000a8ca9f4b34b5227d15d0101b96b063",
-                "reference": "9752a30000a8ca9f4b34b5227d15d0101b96b063",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/1f93a8d19b8241617f5074a123e282575b821df8",
+                "reference": "1f93a8d19b8241617f5074a123e282575b821df8",
                 "shasum": ""
             },
             "require": {
@@ -2004,7 +2011,7 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "https://symfony.com",
-            "time": "2017-06-02T22:05:06+00:00"
+            "time": "2017-06-15T12:58:50+00:00"
         },
         {
             "name": "webmozart/assert",
@@ -2060,7 +2067,9 @@
     "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
-        "wikimedia/omnimail-silverpop": 20
+        "wikimedia/omnimail-silverpop": 20,
+        "mrmarkfrench/silverpop-php-connector": 20,
+        "omnimail/omnimail": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
