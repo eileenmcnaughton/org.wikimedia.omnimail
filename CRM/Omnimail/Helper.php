@@ -43,27 +43,18 @@ class CRM_Omnimail_Helper {
   }
 
   /**
-   * @param $params
-   * @return array
-   */
-  public static function getJobSettings($params) {
-    $settings = self::getSettings();
-    $jobSettings = CRM_Utils_Array::value($params['mail_provider'], $settings['omnimail_omnirecipient_load'], array());
-    return $jobSettings;
-  }
-
-  /**
    * Get settings.
    *
    * This is just a helper for convenience.
    *
+   * We are not caching as there is caching in the api & we use this little
+   * enough it's not worth extra caching.
+   *
    * @return array
    */
   public static function getSettings() {
-    if (!self::$settings) {
-      $settings = civicrm_api3('Setting', 'get', array('group' => 'omnimail'));
-      self::$settings= reset($settings['values']);
-    }
+    $settings = civicrm_api3('Setting', 'get', array('group' => 'omnimail'));
+    self::$settings= reset($settings['values']);
     return self::$settings;
   }
 

@@ -42,6 +42,8 @@ function civicrm_api3_mailing_provider_data_delete($params) {
  * @throws API_Exception
  */
 function civicrm_api3_mailing_provider_data_get($params) {
-
-  return _civicrm_api3_basic_get('CRM_Omnimail_BAO_MailingProviderData', $params);
+  $bao = new CRM_Omnimail_BAO_MailingProviderData();
+  _civicrm_api3_dao_set_filter($bao, $params, TRUE);
+  $bao->selectAdd('CONCAT(contact_identifier, mailing_identifier, recipient_action_datetime) as id');
+  return civicrm_api3_create_success(_civicrm_api3_dao_to_array($bao, $params, FALSE, 'MailingProviderData'), $params, 'MailingProviderData', 'get');
 }

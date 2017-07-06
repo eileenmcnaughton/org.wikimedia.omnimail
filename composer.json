@@ -1,9 +1,14 @@
 {
+  "repositories": [
+    {
+      "type": "git",
+      "url": "https://github.com/eileenmcnaughton/omnimail-silverpop.git"
+    }
+    ],
     "require": {
         "wikimedia/omnimail-silverpop" : "dev-master",
         "phpseclib/phpseclib":  "~2.0",
         "league/csv" : "^8.0",
-        "omnimail/omnimail": "^0.3.0",
         "guzzlehttp/guzzle": "~6.0"
     },
     "require-dev" : {

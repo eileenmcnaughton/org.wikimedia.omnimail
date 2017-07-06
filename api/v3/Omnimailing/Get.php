@@ -5,11 +5,10 @@
  * Date: 5/3/17
  * Time: 12:46 PM
  */
-// Include the library
-require_once 'vendor/autoload.php';
 
-// Require the Silverpop Namespace
-use Omnimail\Omnimail;
+if (file_exists( __DIR__ . '/vendor/autoload.php')) {
+ require_once __DIR__ . '/vendor/autoload.php';
+}
 
 /**
  * Get details about Omnimails.

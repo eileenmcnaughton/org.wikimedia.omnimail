@@ -2,6 +2,11 @@
 
 require_once 'omnimail.civix.php';
 
+// checking if the file exists allows compilation elsewhere if desired.
+if (file_exists( __DIR__ . '/vendor/autoload.php')) {
+  require_once __DIR__ . '/vendor/autoload.php';
+}
+
 /**
  * Implements hook_civicrm_config().
  *
@@ -117,6 +122,7 @@ function omnimail_civicrm_caseTypes(&$caseTypes) {
  * Implements hook_civicrm_angularModules().
  *
  * Generate a list of Angular modules.
+ * Generate a list of Angular modules.
  *
  * Note: This hook only runs in CiviCRM 4.5+. It may
  * use features only available in v4.6+.
@@ -142,17 +148,19 @@ function omnimail_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  * @param array $context
  */
 function omnimail_civicrm_tabset($tabsetName, &$tabs, $context) {
+  // early return while I finish this off.
+  return;
   if ($tabsetName == 'civicrm/contact/view') {
     $contactID = $context['contact_id'];
-      $url = CRM_Utils_System::url('civicrm/event/manage/volunteer',
-        "reset=1&snippet=5&force=1&id=$eventID&action=update&component=event");
+      $url = CRM_Utils_System::url('civicrm/contact/mailings/view', "reset=1&snippet=json&force=1&cid=$contactID");
       //add a new Volunteer tab along with url
       $tab['mailing_data'] = array(
         'title' => ts('Mailings'),
-        'link' => $url,
+        'url' => $url,
         'valid' => 1,
         'active' => 1,
         'current' => FALSE,
+        'class' => 'livePage',
       );
     //Insert this tab into position 4
     $tabs = array_merge(

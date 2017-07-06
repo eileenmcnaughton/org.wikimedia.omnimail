@@ -5,12 +5,12 @@ use Omnimail\Omnimail;
 
 /**
  * Created by IntelliJ IDEA.
- * User: emcnaughton
+ * User: emcnaughton@wikimedia.org
  * Date: 5/16/17
  * Time: 5:53 PM
  */
 
-class CRM_Omnimail_Omnirecipients extends CRM_Omnimail_Omnimail{
+class CRM_Omnimail_Omnigroupmembers extends CRM_Omnimail_Omnimail{
 
   /**
    * @var 
@@ -20,7 +20,7 @@ class CRM_Omnimail_Omnirecipients extends CRM_Omnimail_Omnimail{
   /**
    * @var string
    */
-  protected $job = 'omnirecipients';
+  protected $job = 'omnigroupmembers';
 
   /**
    * @param array $params
@@ -30,13 +30,13 @@ class CRM_Omnimail_Omnirecipients extends CRM_Omnimail_Omnimail{
    * @throws \CRM_Omnimail_IncompleteDownloadException
    * @throws \API_Exception
    */
-  static function getResult($params) {
+  public function getResult($params) {
     $jobSettings = self::getJobSettings($params);
     $settings = CRM_Omnimail_Helper::getSettings();
 
     $mailerCredentials = CRM_Omnimail_Helper::getCredentials($params);
 
-    $request = Omnimail::create($params['mail_provider'], $mailerCredentials)->getRecipients();
+    $request = Omnimail::create($params['mail_provider'], $mailerCredentials)->getGroupMembers();
 
     $startTimestamp = self::getStartTimestamp($params, $jobSettings);
     $endTimestamp = self::getEndTimestamp(CRM_Utils_Array::value('end_date', $params), $settings, $startTimestamp);
@@ -51,13 +51,14 @@ class CRM_Omnimail_Omnirecipients extends CRM_Omnimail_Omnimail{
       $request->setStartTimeStamp($startTimestamp);
       $request->setEndTimeStamp($endTimestamp);
     }
+    $request->setGroupIdentifier($params['group_identifier']);
 
     $result = $request->getResponse();
     for ($i = 0; $i < $settings['omnimail_job_retry_number']; $i++) {
       if ($result->isCompleted()) {
         $data = $result->getData();
         civicrm_api3('Setting', 'create', array(
-          'omnimail_omnirecipient_load' => array(
+          'omnimail_' . $this->job . '_load' => array(
             $params['mail_provider'] => array('last_timestamp' => $endTimestamp),
           ),
         ));

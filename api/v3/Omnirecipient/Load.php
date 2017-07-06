@@ -5,8 +5,6 @@
  * Date: 5/3/17
  * Time: 12:46 PM
  */
-// Include the library
-require_once 'vendor/autoload.php';
 
 /**
  * Load recipient details to mailing_provider_data table.

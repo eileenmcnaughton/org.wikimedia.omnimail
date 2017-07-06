@@ -1,4 +1,10 @@
 <?php
+/**
+ * Created by IntelliJ IDEA.
+ * User: emcnaughton
+ * Date: 5/3/17
+ * Time: 12:46 PM
+ */
 
 /**
  * Get details about Omnimails.
@@ -7,8 +13,9 @@
  *
  * @return array
  */
-function civicrm_api3_omnirecipient_get($params) {
-  $result = CRM_Omnimail_Omnirecipients::getResult($params);
+function civicrm_api3_omnigroupmember_get($params) {
+  $job = new CRM_Omnimail_Omnigroupmembers();
+  $result = $job->getResult($params);
   $options = _civicrm_api3_get_options_from_params($params);
   $values = array();
   foreach ($result as $recipient) {
@@ -32,7 +39,7 @@ function civicrm_api3_omnirecipient_get($params) {
  *
  * @param $params
  */
-function _civicrm_api3_omnirecipient_get_spec(&$params) {
+function _civicrm_api3_omnigroupmember_get_spec(&$params) {
   $params['username'] = array(
     'title' => ts('User name'),
   );
