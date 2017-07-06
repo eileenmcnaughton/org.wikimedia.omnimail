@@ -57,6 +57,20 @@ class SilverpopTest extends BaseTestClass {
   }
 
   /**
+   * Test retrieving a mailing group.
+   */
+  public function testGetGroupMembers() {
+    $requests = array(
+      file_get_contents(__DIR__ . '/Responses/AuthenticateResponse.txt'),
+      file_get_contents(__DIR__ . '/Responses/ExportListResponse.txt'),
+    );
+    /* @var $request \Omnimail\Silverpop\Requests\ExportListRequest */
+    $request = Omnimail::create('Silverpop', array('client' => $this->getMockRequest($requests)))->getGroupMembers();
+    $response = $request->getResponse();
+    $this->assertTrue(is_a($response, 'Omnimail\Silverpop\Responses\GroupMembersResponse'));
+  }
+
+  /**
    * Get mock guzzle client object.
    * @param array $body
    * @param bool $authenticateFirst

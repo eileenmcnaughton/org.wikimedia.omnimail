@@ -70,11 +70,25 @@ class Mailer extends AbstractMailer implements MailerInterface
     }
 
   /**
-   * Get Mailings.
+   * Get Group Members.
    *
    * @param array $parameters
    *
-   * @return \Omnimail\Silverpop\Requests\SilverpopBaseRequest
+   * @return \Omnimail\Silverpop\Requests\ExportListRequest
+   */
+  public function getGroupMembers($parameters = array()) {
+    return $this->createRequest('ExportListRequest', array_merge($parameters, array(
+      'credentials' => $this->getCredentials(),
+      'client' => $this->getClient(),
+    )));
+  }
+
+  /**
+   * Get Recipients.
+   *
+   * @param array $parameters
+   *
+   * @return \Omnimail\Silverpop\Requests\RawRecipientDataExportRequest
    */
   public function getRecipients($parameters = array()) {
     return $this->createRequest('RawRecipientDataExportRequest', array_merge($parameters, array(
