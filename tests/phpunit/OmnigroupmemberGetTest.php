@@ -49,8 +49,27 @@ class OmnigroupmemberGetTest extends OmnimailBaseTestClass implements EndToEndIn
 
     $result = civicrm_api3('Omnigroupmember', 'get', array('mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => array('limit' => 3), 'client' => $client));
     $this->assertEquals(3, $result['count']);
-    $this->assertEquals('bob@example.com', $result['values'][0]['email']);
-    $this->assertEquals('123', $result['values'][0]['contact_id']);
+    $this->assertEquals('eric@example.com', $result['values'][0]['email']);
+    $this->assertEquals('', $result['values'][0]['contact_id']);
   }
 
+
+  /**
+   * @return \GuzzleHttp\Client
+   */
+  protected function setupSuccessfulDownloadClient() {
+    $responses = array(
+      file_get_contents(__DIR__ . '/Responses/ExportListResponse.txt'),
+      file_get_contents(__DIR__ . '/Responses/jobStatusCompleteResponse.txt'),
+    );
+    copy(__DIR__ . '/Responses/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv', sys_get_temp_dir() . '/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv');
+    fopen(sys_get_temp_dir() . '/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv.complete', 'c');
+    civicrm_api3('Setting', 'create', array(
+      'omnimail_omnigroupmembers_load' => array(
+        'Silverpop' => array('last_timestamp' => '1487890800'),
+      ),
+    ));
+    $client = $this->getMockRequest($responses);
+    return $client;
+  }
 }

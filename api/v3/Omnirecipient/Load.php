@@ -31,7 +31,8 @@
  */
 function civicrm_api3_omnirecipient_load($params) {
   try {
-    $recipients = CRM_Omnimail_Omnirecipients::getResult($params);
+    $omnimail = new CRM_Omnimail_Omnirecipients();
+    $recipients = $omnimail->getResult($params);
 
     foreach ($recipients as $recipient) {
       $insertValues = array(
@@ -57,7 +58,7 @@ function civicrm_api3_omnirecipient_load($params) {
     return civicrm_api3_create_success(1);
   }
   catch (CRM_Omnimail_IncompleteDownloadException $e) {
-    $jobSettings = CRM_Omnimail_Helper::getJobSettings($params);
+    $jobSettings = $omnimail->getJobSettings($params);
     civicrm_api3('Setting', 'create', array(
       'omnimail_omnirecipient_load' => array(
         $params['mail_provider'] => array(

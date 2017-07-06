@@ -88,8 +88,7 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass implements EndToEndInt
         'is_civicrm_updated' => '0',
       ),
     ), $providers);
-    $jobSettings = CRM_Omnimail_Helper::getJobSettings(array('mail_provider' => 'Silverpop'));
-    $this->assertEquals(array ('last_timestamp' => '1488495600'), $jobSettings);
+    $this->assertEquals(array ('last_timestamp' => '1488495600'), $this->getJobSettings());
 
   }
 
@@ -119,7 +118,7 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass implements EndToEndInt
       'filePath' => 'Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.zip',
       ),
       'progress_end_date' => '1488495600',
-    ), CRM_Omnimail_Helper::getJobSettings(array('mail_provider' => 'Silverpop')));
+    ), $this->getJobSettings());
   }
 
   /**
@@ -144,7 +143,7 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass implements EndToEndInt
     $this->assertEquals(4, CRM_Core_DAO::singleValueQuery('SELECT COUNT(*) FROM civicrm_mailing_provider_data'));
     $this->assertEquals(array(
       'last_timestamp' => '1488495600',
-    ), CRM_Omnimail_Helper::getJobSettings(array('mail_provider' => 'Silverpop')));
+    ), $this->getJobSettings(array('mail_provider' => 'Silverpop')));
   }
 
   /**
@@ -183,4 +182,13 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass implements EndToEndInt
     $this->fail('No exception');
   }
 
+  /**
+   * Get job settings.
+   *
+   * @return array
+   */
+  public function getJobSettings() {
+    $omnimail = new CRM_Omnimail_Omnirecipients();
+    return $omnimail->getJobSettings(array('mail_provider' => 'Silverpop'));
+  }
 }

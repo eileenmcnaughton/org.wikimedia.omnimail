@@ -20,7 +20,7 @@ class CRM_Omnimail_Omnirecipients extends CRM_Omnimail_Omnimail{
   /**
    * @var string
    */
-  protected $job = 'omnirecipients';
+  protected $job = 'omnirecipient';
 
   /**
    * @param array $params
@@ -30,8 +30,8 @@ class CRM_Omnimail_Omnirecipients extends CRM_Omnimail_Omnimail{
    * @throws \CRM_Omnimail_IncompleteDownloadException
    * @throws \API_Exception
    */
-  static function getResult($params) {
-    $jobSettings = self::getJobSettings($params);
+  public function getResult($params) {
+    $jobSettings = $this->getJobSettings($params);
     $settings = CRM_Omnimail_Helper::getSettings();
 
     $mailerCredentials = CRM_Omnimail_Helper::getCredentials($params);

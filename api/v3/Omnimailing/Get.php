@@ -6,8 +6,9 @@
  * Time: 12:46 PM
  */
 
-if (file_exists( __DIR__ . '/vendor/autoload.php')) {
- require_once __DIR__ . '/vendor/autoload.php';
+use Omnimail\Omnimail;
+if (file_exists( __DIR__ . '/../../../vendor/autoload.php')) {
+ require_once __DIR__ . '/../../../vendor/autoload.php';
 }
 
 /**
