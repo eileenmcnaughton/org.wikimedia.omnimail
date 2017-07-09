@@ -49,6 +49,18 @@ return array(
     'description' => 'settings to inform the Omnimail job',
     'help_text' => 'this will be managed programmatically',
   ),
+  'omnimail_omnigroupmembers_load' => array(
+    'group_name' => 'Omnimail Preferences',
+    'group' => 'omnimail',
+    'name' => 'omnimail_omnigroupmembers_load',
+    'type' => 'Array',
+    'default' => array(),
+    'title' => 'Omnimail Group Membersß Load settings',
+    'is_domain' => '1',
+    'is_contact' => 0,
+    'description' => 'settings to inform the Omnimail job',
+    'help_text' => 'this will be managed programmatically',
+  ),
   'omnimail_job_retry_number' => array(
     'group_name' => 'Omnimail Preferences',
     'group' => 'omnimail',

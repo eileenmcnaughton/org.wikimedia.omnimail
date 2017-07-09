@@ -105,7 +105,7 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass implements EndToEndInt
       file_get_contents(__DIR__ . '/Responses/RawRecipientDataExportResponse.txt'),
     );
     for ($i = 0; $i < 15; $i++) {
-      $responses[] = file_get_contents(__DIR__ . '/Responses/jobStatusWaitingResponse.txt');
+      $responses[] = file_get_contents(__DIR__ . '/Responses/JobStatusWaitingResponse.txt');
     }
     civicrm_api3('setting', 'create', array('omnimail_job_retry_interval' => 0.01));
     civicrm_api3('Omnirecipient', 'load', array('mail_provider' => 'Silverpop', 'username' => 'Donald', 'password' => 'Duck', 'client' => $this->getMockRequest($responses)));

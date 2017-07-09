@@ -18,15 +18,15 @@ function civicrm_api3_omnigroupmember_get($params) {
   $result = $job->getResult($params);
   $options = _civicrm_api3_get_options_from_params($params);
   $values = array();
-  foreach ($result as $recipient) {
+  foreach ($result as $groupMember) {
     $values[] = array(
-      'email' => (string) $recipient->getEmail(),
-      'is_opt_out' => (string) $recipient->isOptOut(),
-      'opt_in_date' => (string) $recipient->getOptInIsoDateTime(),
-      'opt_in_source' => (string) $recipient->getOptInSource(),
-      'opt_out_source' => (string) $recipient->getOptOutSource(),
-      'opt_out_date' => (string) $recipient->getOptOutIsoDateTime(),
-      'contact_id' => (string) $recipient->getContactReference(),
+      'email' => (string) $groupMember->getEmail(),
+      'is_opt_out' => (string) $groupMember->isOptOut(),
+      'opt_in_date' => (string) $groupMember->getOptInIsoDateTime(),
+      'opt_in_source' => (string) $groupMember->getOptInSource(),
+      'opt_out_source' => (string) $groupMember->getOptOutSource(),
+      'opt_out_date' => (string) $groupMember->getOptOutIsoDateTime(),
+      'contact_id' => (string) $groupMember->getContactReference(),
     );
     if ($options['limit'] > 0 && count($values) === (int) $options['limit']) {
       break;
@@ -60,9 +60,10 @@ function _civicrm_api3_omnigroupmember_get_spec(&$params) {
     'title' => ts('Date to fetch to'),
     'type' => CRM_Utils_Type::T_TIMESTAMP,
   );
-  $params['mailing_external_identifier'] = array(
-    'title' => ts('Identifier for the mailing'),
+  $params['group_identifier'] = array(
+    'title' => ts('Identifier for the group'),
     'type' => CRM_Utils_Type::T_STRING,
+    'api.required' => TRUE,
   );
   $params['retrieval_parameters'] = array(
     'title' => ts('Additional information for retrieval of pre-stored requests'),

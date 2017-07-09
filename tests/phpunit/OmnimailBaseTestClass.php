@@ -52,7 +52,7 @@ class OmnimailBaseTestClass extends \PHPUnit_Framework_TestCase implements EndTo
   protected function setupSuccessfulDownloadClient() {
     $responses = array(
       file_get_contents(__DIR__ . '/Responses/RawRecipientDataExportResponse.txt'),
-      file_get_contents(__DIR__ . '/Responses/jobStatusCompleteResponse.txt'),
+      file_get_contents(__DIR__ . '/Responses/JobStatusCompleteResponse.txt'),
     );
     //Raw Recipient Data Export Jul 02 2017 21-46-49 PM 758.zip
     copy(__DIR__ . '/Responses/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv', sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv');

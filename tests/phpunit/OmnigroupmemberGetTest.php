@@ -47,10 +47,11 @@ class OmnigroupmemberGetTest extends OmnimailBaseTestClass implements EndToEndIn
   public function testOmnigroupmemberGet() {
     $client = $this->setupSuccessfulDownloadClient();
 
-    $result = civicrm_api3('Omnigroupmember', 'get', array('mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => array('limit' => 3), 'client' => $client));
+    $result = civicrm_api3('Omnigroupmember', 'get', array('mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => array('limit' => 3), 'client' => $client, 'group_identifier' => 123));
     $this->assertEquals(3, $result['count']);
     $this->assertEquals('eric@example.com', $result['values'][0]['email']);
     $this->assertEquals('', $result['values'][0]['contact_id']);
+    $this->assertEquals(TRUE, $result['values'][0]['is_opt_out']);
     $this->assertEquals('2016-10-18 20:01:00', $result['values'][0]['opt_in_date']);
     $this->assertEquals('2017-07-04 11:11:00', $result['values'][0]['opt_out_date']);
     $this->assertEquals('Added by WebForms', $result['values'][0]['opt_in_source']);
