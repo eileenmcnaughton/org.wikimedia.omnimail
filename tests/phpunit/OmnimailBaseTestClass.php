@@ -24,6 +24,13 @@ use GuzzleHttp\Psr7\Response;
  */
 class OmnimailBaseTestClass extends \PHPUnit_Framework_TestCase implements EndToEndInterface, TransactionalInterface {
 
+  public function setUp() {
+    parent::setUp();
+    $null = NULL;
+    civicrm_api3('Setting', 'getfields', array('cache_clear' => 1));
+    \Civi::cache('settings')->set('settingsMetadata_' . \CRM_Core_Config::domainID() . '_', $null);
+  }
+
   /**
    * Get mock guzzle client object.
    *
@@ -57,12 +64,26 @@ class OmnimailBaseTestClass extends \PHPUnit_Framework_TestCase implements EndTo
     //Raw Recipient Data Export Jul 02 2017 21-46-49 PM 758.zip
     copy(__DIR__ . '/Responses/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv', sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv');
     fopen(sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv.complete', 'c');
-    civicrm_api3('Setting', 'create', array(
-      'omnimail_omnirecipient_load' => array(
-        'Silverpop' => array('last_timestamp' => '1487890800'),
-      ),
-    ));
+    $this->createSetting('omnimail_omnirecipient_load',array('Silverpop' => array('last_timestamp' => '1487890800'),));
     $client = $this->getMockRequest($responses);
     return $client;
+  }
+
+  /**
+   * Create a CiviCRM setting with some extra debugging if it fails.
+   *
+   * @param $setting
+   * @param $value
+   */
+  protected function createSetting($setting, $value) {
+    try {
+      civicrm_api3('Setting', 'create', array(
+        'debug' => 1,
+        $setting => $value,
+      ));
+    } catch (CiviCRM_API3_Exception $e) {
+      $settings = \Civi\Core\SettingsMetadata::getMetadata();
+      $this->fail(print_r(array_keys($settings), 1), $e->getMessage() . $e->getTraceAsString() . print_r($e->getExtraParams(), TRUE));
+    }
   }
 }

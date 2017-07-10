@@ -61,7 +61,7 @@ class Contact {
    * @return bool
    */
   public function isOptOut() {
-    return $this->data['isOptOut'] == 'T' ? TRUE : FALSE;
+    return $this->data['opted_out'] == 'T' ? TRUE : FALSE;
   }
 
   /**

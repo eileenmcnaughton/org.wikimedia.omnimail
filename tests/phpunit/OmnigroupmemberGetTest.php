@@ -33,10 +33,6 @@ class OmnigroupmemberGetTest extends OmnimailBaseTestClass implements EndToEndIn
       ->apply();
   }
 
-  public function setUp() {
-    parent::setUp();
-  }
-
   public function tearDown() {
     parent::tearDown();
   }
@@ -45,6 +41,12 @@ class OmnigroupmemberGetTest extends OmnimailBaseTestClass implements EndToEndIn
    * Example: Test that a version is returned.
    */
   public function testOmnigroupmemberGet() {
+    // We are having weird cache issues ... :-( This is fine on extension only tests
+    // but not when run in WMF suite. Trying an extra clear.
+    // Maybe https://github.com/civicrm/civicrm-drupal/pull/447 will help (not on wmf yet).
+    $null = NULL;
+    \Civi::cache('settings')->set('settingsMetadata_' . \CRM_Core_Config::domainID() . '_', $null);
+
     $client = $this->setupSuccessfulDownloadClient();
 
     $result = civicrm_api3('Omnigroupmember', 'get', array('mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => array('limit' => 3), 'client' => $client, 'group_identifier' => 123));
@@ -66,15 +68,12 @@ class OmnigroupmemberGetTest extends OmnimailBaseTestClass implements EndToEndIn
   protected function setupSuccessfulDownloadClient() {
     $responses = array(
       file_get_contents(__DIR__ . '/Responses/ExportListResponse.txt'),
-      file_get_contents(__DIR__ . '/Responses/jobStatusCompleteResponse.txt'),
+      file_get_contents(__DIR__ . '/Responses/JobStatusCompleteResponse.txt'),
     );
     copy(__DIR__ . '/Responses/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv', sys_get_temp_dir() . '/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv');
     fopen(sys_get_temp_dir() . '/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv.complete', 'c');
-    civicrm_api3('Setting', 'create', array(
-      'omnimail_omnigroupmembers_load' => array(
-        'Silverpop' => array('last_timestamp' => '1487890800'),
-      ),
-    ));
+    $this->createSetting('omnimail_omnigroupmembers_load', array('Silverpop' => array('last_timestamp' => '1487890800')));
+
     $client = $this->getMockRequest($responses);
     return $client;
   }

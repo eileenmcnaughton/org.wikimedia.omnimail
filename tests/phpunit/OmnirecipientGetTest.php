@@ -35,6 +35,7 @@ class OmnirecipientGetTest extends OmnimailBaseTestClass implements EndToEndInte
 
   public function setUp() {
     parent::setUp();
+    Civi::service('settings_manager')->flush();
   }
 
   public function tearDown() {
