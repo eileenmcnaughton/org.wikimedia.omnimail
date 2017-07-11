@@ -148,8 +148,6 @@ function omnimail_civicrm_alterSettingsFolders(&$metaDataFolders = NULL) {
  * @param array $context
  */
 function omnimail_civicrm_tabset($tabsetName, &$tabs, $context) {
-  // early return while I finish this off.
-  return;
   if ($tabsetName == 'civicrm/contact/view') {
     $contactID = $context['contact_id'];
       $url = CRM_Utils_System::url('civicrm/contact/mailings/view', "reset=1&snippet=json&force=1&cid=$contactID");

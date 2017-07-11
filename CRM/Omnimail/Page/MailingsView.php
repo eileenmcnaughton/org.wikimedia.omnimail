@@ -8,7 +8,7 @@ class CRM_Omnimail_Page_MailingsView extends CRM_Core_Page {
 
     $mailings = civicrm_api3('MailingProviderData', 'get', array(
       'contact_id' => CRM_Utils_Request::retrieve('cid', 'Integer'),
-      'return' => array('event_type', 'mailing_identifier', 'email', 'recipient_action_datetime'),
+      'return' => array('event_type', 'mailing_identifier', 'mailing_identifier.name', 'mailing_identifier.id', 'email', 'recipient_action_datetime'),
       'sequential' => 1,
       'options' => array('limit' => 500, 'sort' => 'recipient_action_datetime DESC')
     ));
