@@ -153,12 +153,13 @@ function omnimail_civicrm_tabset($tabsetName, &$tabs, $context) {
       $url = CRM_Utils_System::url('civicrm/contact/mailings/view', "reset=1&snippet=json&force=1&cid=$contactID");
       //add a new Volunteer tab along with url
       $tab['mailing_data'] = array(
-        'title' => ts('Mailings'),
+        'title' => ts('Mailing Events'),
         'url' => $url,
         'valid' => 1,
         'active' => 1,
         'current' => FALSE,
         'class' => 'livePage',
+        'count' => civicrm_api3('MailingProviderData', 'getcount', array('contact_id' => $contactID))
       );
     //Insert this tab into position 4
     $tabs = array_merge(

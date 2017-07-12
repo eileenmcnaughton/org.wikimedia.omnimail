@@ -14,6 +14,7 @@
  * @return array
  */
 function civicrm_api3_omnimailing_load($params) {
+  $values = array();
   $mailings = civicrm_api3('Omnimailing', 'get', array(
     'mail_provider' => 'Silverpop',
     'start_date' => $params['start_date'],

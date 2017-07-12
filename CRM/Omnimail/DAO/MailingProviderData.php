@@ -124,7 +124,7 @@ class CRM_Omnimail_DAO_MailingProviderData extends CRM_Core_DAO {
           'name' => 'mailing_identifier',
           'type' => CRM_Utils_Type::T_STRING,
           'title' => ts('Mailing Identifier') ,
-          'description' => 'External Referencefor the mailing',
+          'description' => 'External Reference for the mailing',
           'maxlength' => 255,
           'size' => CRM_Utils_Type::HUGE,
           'table_name' => 'civicrm_mailing_provider_data',

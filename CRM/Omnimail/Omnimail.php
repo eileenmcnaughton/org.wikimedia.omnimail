@@ -13,21 +13,13 @@ use Omnimail\Omnimail;
 class CRM_Omnimail_Omnimail {
 
   /**
-   * @return CRM_Omnimail_Omnimail
+   * The job in use.
+   *
+   * This is used in settings names and should be overriden by child classes.
+   *
+   * @var string
    */
-  public static function singleton() {
-    if (!self::$singleton) {
-      self::$singleton = new self();
-    }
-    return self::$singleton;
-  }
-
-  /**
-   * @param array $params
-   */
-  public function getMailer($params) {
-
-  }
+  protected $job;
 
   /**
    * Get the timestamp to start from.
@@ -68,7 +60,13 @@ class CRM_Omnimail_Omnimail {
   }
 
   /**
-   * @param $params
+   * Get the settings for the job.
+   *
+   * This requires the child class to declare $this->job.
+   *
+   * @param array $params
+   *   - mail_provider
+   *
    * @return array
    */
   public function getJobSettings($params) {

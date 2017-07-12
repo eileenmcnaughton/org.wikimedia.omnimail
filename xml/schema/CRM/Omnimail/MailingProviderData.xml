@@ -23,7 +23,7 @@
         <name>mailing_identifier</name>
         <type>varchar</type>
         <length>255</length>
-        <comment>External Referencefor the mailing</comment>
+        <comment>External Reference for the mailing</comment>
     </field>
     <field>
         <name>email</name>
