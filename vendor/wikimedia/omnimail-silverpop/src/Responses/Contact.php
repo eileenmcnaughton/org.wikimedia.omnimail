@@ -75,14 +75,14 @@ class Contact {
    * @return false|string
    */
   public function getOptOutIsoDateTime() {
-    return (empty($this->getOptOutTimestamp()) ? NULL : date('Y-m-d H:i:s', $this->getOptOutTimestamp()));
+    return (empty($this->getOptOutTimestamp()) ? FALSE : date('Y-m-d H:i:s', $this->getOptOutTimestamp()));
   }
 
   /**
    * @return mixed
    */
   public function getOptInSource() {
-    return $this->data['opt_in_details'];
+    return (string) $this->data['opt_in_details'];
   }
 
   /**
@@ -134,6 +134,10 @@ class Contact {
    */
   public function setContactReference($contactReference) {
     $this->contactReference = $contactReference;
+  }
+
+  public function getCustomData($key) {
+    return (string) $this->data[$key];
   }
 
   /**
