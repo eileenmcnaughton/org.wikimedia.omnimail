@@ -35,6 +35,10 @@ class CRM_Omnimail_Omnigroupmembers extends CRM_Omnimail_Omnimail{
     $settings = CRM_Omnimail_Helper::getSettings();
 
     $mailerCredentials = CRM_Omnimail_Helper::getCredentials($params);
+    $jobParameters = array();
+    if ($params['is_opt_in_only']) {
+      $jobParameters['exportType'] = 'OPT_IN';
+    }
 
     $request = Omnimail::create($params['mail_provider'], $mailerCredentials)->getGroupMembers();
 
