@@ -39,6 +39,27 @@ class GroupMembersResponse extends BaseResponse
   protected $contactReferenceField;
 
   /**
+   * Offset from start of csv file.
+   *
+   * @var int
+   */
+  protected $offset = 0;
+
+  /**
+   * @return int
+   */
+  public function getOffset() {
+    return $this->offset;
+  }
+
+  /**
+   * @param int $offset
+   */
+  public function setOffset($offset) {
+    $this->offset = $offset;
+  }
+
+  /**
    * @return string
    */
   public function getContactReferenceField() {
@@ -179,6 +200,7 @@ class GroupMembersResponse extends BaseResponse
   public function setCsvReader() {
     $csvFile = $this->downloadCsv();
     $this->reader = Reader::createFromPath($csvFile);
+    $this->reader->setOffset($this->getOffset());
   }
 
   /**

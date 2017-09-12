@@ -48,6 +48,20 @@ class ExportListRequest extends SilverpopBaseRequest
   }
 
   /**
+   * @return \GuzzleHttp\Client
+   */
+  public function getClient() {
+    return $this->client;
+  }
+
+  /**
+   * @param \GuzzleHttp\Client $client
+   */
+  public function setClient($client) {
+    $this->client = $client;
+  }
+
+  /**
    * @return mixed
    */
   public function getGroupIdentifier() {
@@ -123,6 +137,7 @@ class ExportListRequest extends SilverpopBaseRequest
     $response = new GroupMembersResponse(array());
     $response->setRetrievalParameters($this->getRetrievalParameters());
     $response->setSilverpop($this->silverPop);
+    $response->setOffset($this->getOffset());
     return $response;
   }
 
