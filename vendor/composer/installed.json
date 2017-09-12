@@ -2088,7 +2088,7 @@
         "source": {
             "type": "git",
             "url": "https://github.com/eileenmcnaughton/omnimail-silverpop.git",
-            "reference": "aac29243defa1dfc78cff7f51bbb4f2c30de39ec"
+            "reference": "45eaa193c3353bcceb27bb2676da08598fd57686"
         },
         "require": {
             "league/csv": "^8.0",
@@ -2099,7 +2099,7 @@
         "require-dev": {
             "guzzlehttp/guzzle": "*"
         },
-        "time": "2017-09-12T13:57:41+00:00",
+        "time": "2017-09-12T23:04:53+00:00",
         "type": "library",
         "installation-source": "source",
         "autoload": {

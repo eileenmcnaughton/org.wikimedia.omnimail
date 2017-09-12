@@ -39,27 +39,6 @@ class GroupMembersResponse extends BaseResponse
   protected $contactReferenceField;
 
   /**
-   * Offset from start of csv file.
-   *
-   * @var int
-   */
-  protected $offset = 0;
-
-  /**
-   * @return int
-   */
-  public function getOffset() {
-    return $this->offset;
-  }
-
-  /**
-   * @param int $offset
-   */
-  public function setOffset($offset) {
-    $this->offset = $offset;
-  }
-
-  /**
    * @return string
    */
   public function getContactReferenceField() {
@@ -140,6 +119,7 @@ class GroupMembersResponse extends BaseResponse
     $filterOutRow = function ($row, $rowIndex) {
       return $rowIndex != 0;
     };
+    $this->reader->setOffset($this->getOffset());
     $this->reader->addFilter($filterOutRow);
 
     $formatFunction = function ($row) {
