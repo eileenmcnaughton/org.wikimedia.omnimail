@@ -128,6 +128,7 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass implements EndToEndI
         'filePath' => '/download/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv',
       ),
       'progress_end_date' => '1488495600',
+      'offset' => 0,
     ), $this->getJobSettings());
     $this->cleanupGroup($group);
   }
