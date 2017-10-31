@@ -44,9 +44,9 @@ function civicrm_api3_omnirecipient_load($params) {
     $insertBatchSize = CRM_Utils_Array::value('insert_batch_size', $params, 1);
     $valueStrings = array();
     $progressSettings = array(
-      'last_timestamp' => $jobSettings['last_timestamp'],
+      'last_timestamp' => CRM_Utils_Array::value('last_timestamp', $jobSettings),
       'retrieval_parameters' => $omnimail->getRetrievalParameters(),
-      'progress_end_date' => $omnimail->endTimeStamp,
+      'progress_end_timestamp' => $omnimail->endTimeStamp,
     );
 
     foreach ($recipients as $recipient) {
@@ -86,14 +86,19 @@ function civicrm_api3_omnirecipient_load($params) {
       }
     }
     _civicrm_api3_omnirecipient_load_write_remainder_rows($valueStrings, $omnimail, $progressSettings, $omnimail->getOffset() + $count);
-    $omnimail->saveJobSetting(array('last_timestamp' => $omnimail->endTimeStamp));
+    $omnimail->saveJobSetting(array(
+      'last_timestamp' => $omnimail->endTimeStamp,
+      'progress_end_timestamp' => 'null',
+      'offset' => 'null',
+      'retrieval_parameters' => 'null',
+    ));
     return civicrm_api3_create_success(1);
   }
   catch (CRM_Omnimail_IncompleteDownloadException $e) {
     $omnimail->saveJobSetting(array(
       'last_timestamp' => $omnimail->getStartTimestamp($params),
       'retrieval_parameters' => $e->getRetrievalParameters(),
-      'progress_end_date' => $e->getEndTimestamp(),
+      'progress_end_timestamp' => $e->getEndTimestamp(),
     ));
     return civicrm_api3_create_success(1);
   }
@@ -187,9 +192,9 @@ function _civicrm_api3_omnirecipient_load_spec(&$params) {
     'type' => CRM_Utils_Type::T_INT,
     'api.default' => 300,
   );
-  $params['job_suffix'] = array(
-    'title' => ts('A suffix string to add to job-specific settings.'),
-    'description' => ts('The suffix allows for multiple settings to be stored for one job. For example if wishing to run an up-top-date job and a catch-up job'),
+  $params['job_identifier'] = array(
+    'title' => ts('A string to identify this job.'),
+    'description' => ts('The identifier allows for multiple settings to be stored for one job. For example if wishing to run an up-top-date job and a catch-up job'),
     'type' => CRM_Utils_Type::T_STRING,
     'api.default' => '',
   );

@@ -28,9 +28,8 @@ function civicrm_api3_omnigroupmember_load($params) {
   }
   catch (CRM_Omnimail_IncompleteDownloadException $e) {
     $job->saveJobSetting(array(
-      'last_timestamp' => $jobSettings['last_timestamp'],
       'retrieval_parameters' => $e->getRetrievalParameters(),
-      'progress_end_date' => $e->getEndTimestamp(),
+      'progress_end_timestamp' => $e->getEndTimestamp(),
       'offset' => 0,
     ));
     return civicrm_api3_create_success(1);
@@ -48,7 +47,7 @@ function civicrm_api3_omnigroupmember_load($params) {
       $job->saveJobSetting(array(
         'last_timestamp' => $jobSettings['last_timestamp'],
         'retrieval_parameters' => $job->getRetrievalParameters(),
-        'progress_end_date' => $job->endTimeStamp,
+        'progress_end_timestamp' => $job->endTimeStamp,
         'offset' => $offset + $count,
       ));
       // Do this here - ie. before processing a new row rather than at the end of the last row
@@ -104,7 +103,12 @@ function civicrm_api3_omnigroupmember_load($params) {
     }
   }
 
-  $job->saveJobSetting(array('last_timestamp' => $job->endTimeStamp));
+  $job->saveJobSetting(array(
+    'last_timestamp' => $job->endTimeStamp,
+    'progress_end_timestamp' => 'null',
+    'retrieval_parameters' => 'null',
+    'offset' => 'null',
+  ));
   return civicrm_api3_create_success($values);
 }
 
@@ -223,9 +227,9 @@ function _civicrm_api3_omnigroupmember_load_spec(&$params) {
     'type' => CRM_Utils_Type::T_INT,
     'api.default' => 60,
   );
-  $params['job_suffix'] = array(
-    'title' => ts('A suffix string to add to job-specific settings.'),
-    'description' => ts('The suffix allows for multiple settings to be stored for one job. For example if wishing to run an up-top-date job and a catch-up job'),
+  $params['job_identifier'] = array(
+    'title' => ts('An identifier string to add to job-specific settings.'),
+    'description' => ts('The identifier allows for multiple settings to be stored for one job. For example if wishing to run an up-top-date job and a catch-up job'),
     'type' => CRM_Utils_Type::T_STRING,
     'api.default' => '',
   );
