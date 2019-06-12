@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/GuzzleTestTrait.php';
+
 use Civi\Test\EndToEndInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
@@ -22,14 +24,37 @@ use GuzzleHttp\Psr7\Response;
  *
  * @group e2e
  */
-class OmnimailBaseTestClass extends \PHPUnit_Framework_TestCase implements EndToEndInterface, TransactionalInterface {
+class OmnimailBaseTestClass extends \PHPUnit\Framework\TestCase implements EndToEndInterface, TransactionalInterface {
+
+  use \Civi\Test\Api3TestTrait;
+  use GuzzleTestTrait;
+
+  /**
+   * IDs of contacts created for the test.
+   *
+   * @var array
+   */
+  protected $contactIDs = array();
 
   public function setUp() {
     civicrm_initialize();
+    if (!isset($GLOBALS['_PEAR_default_error_mode'])) {
+      // This is simply to protect against e-notices if globals have been reset by phpunit.
+      $GLOBALS['_PEAR_default_error_mode'] = NULL;
+      $GLOBALS['_PEAR_default_error_options'] = NULL;
+    }
     parent::setUp();
     $null = NULL;
     Civi::service('settings_manager')->flush();
     \Civi::$statics['_omnimail_settings'] = array();
+  }
+
+  public function tearDown() {
+    foreach ($this->contactIDs as $contactID) {
+      $this->callAPISuccess('Contact', 'delete', ['id' => $contactID, 'skip_undelete' => 1]);
+    }
+    $this->cleanupMailingData();
+    parent::tearDown();
   }
 
   /**
@@ -109,6 +134,127 @@ class OmnimailBaseTestClass extends \PHPUnit_Framework_TestCase implements EndTo
        }
      }
      return $settings;
+  }
+
+  public function createMailingProviderData() {
+    $this->callAPISuccess('Campaign', 'create', array('name' => 'xyz', 'title' => 'Cool Campaign'));
+    $this->callAPISuccess('Mailing', 'create', array('campaign_id' => 'xyz', 'hash' => 'xyz', 'name' => 'Mail Unit Test'));
+
+    $this->callAPISuccess('MailingProviderData', 'create',  array(
+      'contact_id' => $this->contactIDs['charlie_clone'],
+      'email' => 'charlie@example.com',
+      'event_type' => 'Opt Out',
+      'mailing_identifier' => 'xyz',
+      'recipient_action_datetime' => '2017-02-02',
+      'contact_identifier' => 'a',
+    ));
+    $this->callAPISuccess('MailingProviderData', 'create',  array(
+      'contact_id' => $this->contactIDs['marie'],
+      'event_type' => 'Open',
+      'email' => 'bob@example.com',
+      'mailing_identifier' => 'xyz',
+      'recipient_action_datetime' => '2017-03-03',
+      'contact_identifier' => 'b',
+    ));
+    $this->callAPISuccess('MailingProviderData', 'create',  array(
+      'contact_id' => $this->contactIDs['isaac'],
+      'event_type' => 'Suppressed',
+      'mailing_identifier' => 'xyuuuz',
+      'recipient_action_datetime' => '2017-04-04',
+      'contact_identifier' => 'c',
+    ));
+    $this->callAPISuccess('MailingProviderData', 'create',  array(
+      'contact_id' => $this->contactIDs['isaac'],
+      'email' => 'charlie@example.com',
+      'event_type' => 'Hard Bounce',
+      'mailing_identifier' => 'xyuuuz',
+      'recipient_action_datetime' => '2017-05-04',
+      'contact_identifier' => 'c',
+    ));
+  }
+
+  /**
+   * Cleanup test setup data.
+   */
+  protected function cleanupMailingData() {
+    CRM_Core_DAO::executeQuery("DELETE FROM civicrm_mailing_provider_data WHERE mailing_identifier IN (
+      'xyz', 'xyuuuz'
+   )");
+    CRM_Core_DAO::executeQuery("DELETE FROM civicrm_mailing WHERE name = 'Mail Unit Test'");
+  }
+
+  protected function makeScientists() {
+    $contact = $this->callAPISuccess('Contact', 'create', array(
+      'first_name' => 'Charles',
+      'last_name' => 'Darwin',
+      'contact_type' => 'Individual'
+    ));
+    $this->contactIDs['charlie'] = $contact['id'];
+    $contact = $this->callAPISuccess('Contact', 'create', array(
+      'first_name' => 'Charlie',
+      'last_name' => 'Darwin',
+      'contact_type' => 'Individual',
+      'api.email.create' => array(
+        'is_bulkmail' => 1,
+        'email' => 'charlie@example.com',
+      )
+    ));
+    $this->contactIDs['charlie_clone'] = $contact['id'];
+
+    $contact = $this->callAPISuccess('Contact', 'create', array(
+      'first_name' => 'Marie',
+      'last_name' => 'Currie',
+      'contact_type' => 'Individual'
+    ));
+    $this->contactIDs['marie'] = $contact['id'];
+    $contact = $this->callAPISuccess('Contact', 'create', array(
+      'first_name' => 'Isaac',
+      'last_name' => 'Newton',
+      'contact_type' => 'Individual'
+    ));
+    $this->contactIDs['isaac'] = $contact['id'];
+  }
+
+  /**
+   * Set up the mock handler for an erase request.
+   *
+   * @param int $connectionCount
+   */
+  protected function setUpForErase($connectionCount = 1) {
+    $files = ['/Responses/AuthenticateRestResponse.txt'];
+    $i = 0;
+    while ($i < $connectionCount) {
+      // These files consist of the Authenticate request and the 'status pending'.
+      // which is re-tried a handful of times. We never get a reply because in my tests it took
+      // > 15 mins & our process won't hang around for that.
+      array_push($files,
+        '/Responses/Privacy/EraseInitialResponse.txt',
+        '/Responses/Privacy/EraseInProgressResponse.txt',
+        '/Responses/Privacy/EraseInProgressResponse.txt',
+        '/Responses/Privacy/EraseInProgressResponse.txt',
+        '/Responses/Privacy/EraseInProgressResponse.txt',
+        '/Responses/Privacy/EraseInProgressResponse.txt',
+        '/Responses/Privacy/EraseInProgressResponse.txt'
+      );
+      $i++;
+    }
+
+    $this->createMockHandlerForFiles($files);
+    $this->setUpClientWithHistoryContainer();
+  }
+
+  /**
+   * Set up the mock handler for an erase request.
+   */
+  protected function setUpForEraseFollowUpSuccess() {
+    $files = [
+      '/Responses/AuthenticateRestResponse.txt',
+      '/Responses/Privacy/EraseInProgressResponse.txt',
+      '/Responses/Privacy/EraseSuccessResponse.txt'
+    ];
+
+    $this->createMockHandlerForFiles($files);
+    $this->setUpClientWithHistoryContainer();
   }
 
 }

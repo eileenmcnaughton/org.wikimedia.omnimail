@@ -23,7 +23,7 @@ require_once __DIR__ . '/OmnimailBaseTestClass.php';
  *
  * @group e2e
  */
-class OmnirecipientProcessUnsubscribesTest extends OmnimailBaseTestClass implements EndToEndInterface, TransactionalInterface {
+class OmnirecipientProcessOnHoldTest extends OmnimailBaseTestClass implements EndToEndInterface, TransactionalInterface {
 
   public function setUpHeadless() {
     // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
@@ -45,25 +45,14 @@ class OmnirecipientProcessUnsubscribesTest extends OmnimailBaseTestClass impleme
   /**
    * Example: Test that a version is returned.
    */
-  public function testOmnirecipientProcessUnsubscribes() {
+  public function testOmnirecipientProcessOnHold() {
 
     $this->createMailingProviderData();
-    civicrm_api3('Omnirecipient', 'process_unsubscribes', array('mail_provider' => 'Silverpop'));
+    civicrm_api3('Omnirecipient', 'process_onhold', array('mail_provider' => 'Silverpop'));
     $data = civicrm_api3('MailingProviderData', 'get', array('sequential' => 1));
-    $this->assertEquals(1, $data['values'][0]['is_civicrm_updated']);
-    $contact = civicrm_api3('Contact', 'getsingle', array('id' => $this->contactIDs['charlie_clone']));
-    $this->assertEquals(1, $contact['is_opt_out']);
-    $email = civicrm_api3('Email', 'getsingle', array('email' => 'charlie@example.com'));
-    $this->assertEquals(0, $email['is_bulkmail']);
-    $activity = civicrm_api3('Activity', 'getsingle', array('contact_id' => $this->contactIDs['charlie_clone']));
-    $this->assertEquals('Unsubscribed via Silverpop', $activity['subject']);
-
-    $contact = civicrm_api3('Contact', 'getsingle', array('id' => $this->contactIDs['marie']));
-    $this->assertEquals(0, $contact['is_opt_out']);
-
-    $contact = civicrm_api3('Contact', 'getsingle', array('id' => $this->contactIDs['isaac']));
-    $this->assertEquals(1, $contact['is_opt_out']);
-
+    $this->assertEquals(1, $data['values'][3]['is_civicrm_updated']);
+    $email = civicrm_api3('Email', 'getsingle', ['email' => 'charlie@example.com']);
+    $this->assertEquals(1, $email['on_hold']);
   }
 
 }

@@ -23,7 +23,7 @@ require_once __DIR__ . '/OmnimailBaseTestClass.php';
  *
  * @group e2e
  */
-class OmnirecipientProcessUnsubscribesTest extends OmnimailBaseTestClass implements EndToEndInterface, TransactionalInterface {
+class OmnirecipientInformationRequestTest extends OmnimailBaseTestClass implements EndToEndInterface, TransactionalInterface {
 
   public function setUpHeadless() {
     // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
@@ -35,7 +35,6 @@ class OmnirecipientProcessUnsubscribesTest extends OmnimailBaseTestClass impleme
 
   public function setUp() {
     parent::setUp();
-    $this->makeScientists();
   }
 
   public function tearDown() {
@@ -45,25 +44,27 @@ class OmnirecipientProcessUnsubscribesTest extends OmnimailBaseTestClass impleme
   /**
    * Example: Test that a version is returned.
    */
-  public function testOmnirecipientProcessUnsubscribes() {
+  public function testOmnirecipientInformationRequest() {
+    $this->createMockHandlerForFiles([
+      '/Responses/AuthenticateRestResponse.txt',
+      '/Responses/Privacy/PrivacyRequest1.txt',
+      '/Responses/Privacy/PrivacyRequest2.txt',
+      '/Responses/Privacy/PrivacyRequest3.txt',
+    ]);
+    $this->setUpClientWithHistoryContainer();
+    $result = $this->callAPISuccess('Omnirecipient', 'informationrequest', [
+      'mail_provider' => 'Silverpop',
+      'client' => $this->getGuzzleClient(),
+      'email' => 'eileen@example.com',
+      'client_id' => 'secrethandshake',
+      'client_secret' => 'waggleleftthumb',
+      'refresh_token' => 'thenrightone',
+    ])['values'];
 
-    $this->createMailingProviderData();
-    civicrm_api3('Omnirecipient', 'process_unsubscribes', array('mail_provider' => 'Silverpop'));
-    $data = civicrm_api3('MailingProviderData', 'get', array('sequential' => 1));
-    $this->assertEquals(1, $data['values'][0]['is_civicrm_updated']);
-    $contact = civicrm_api3('Contact', 'getsingle', array('id' => $this->contactIDs['charlie_clone']));
-    $this->assertEquals(1, $contact['is_opt_out']);
-    $email = civicrm_api3('Email', 'getsingle', array('email' => 'charlie@example.com'));
-    $this->assertEquals(0, $email['is_bulkmail']);
-    $activity = civicrm_api3('Activity', 'getsingle', array('contact_id' => $this->contactIDs['charlie_clone']));
-    $this->assertEquals('Unsubscribed via Silverpop', $activity['subject']);
-
-    $contact = civicrm_api3('Contact', 'getsingle', array('id' => $this->contactIDs['marie']));
-    $this->assertEquals(0, $contact['is_opt_out']);
-
-    $contact = civicrm_api3('Contact', 'getsingle', array('id' => $this->contactIDs['isaac']));
-    $this->assertEquals(1, $contact['is_opt_out']);
-
+    $this->assertEquals(1417692990, $result->getOptInTimestamp());
+    $requests = $this->getRequestBodies();
+    $this->assertEquals($requests[0], trim(file_get_contents(__DIR__ . '/Requests/AuthenticateRest.txt')));
+    $this->assertEquals($requests[1], file_get_contents(__DIR__ . '/Requests/privacy_csv.txt'));
   }
 
 }
