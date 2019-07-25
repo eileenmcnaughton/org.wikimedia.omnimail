@@ -115,7 +115,7 @@ class Contact {
    * @return mixed
    */
   public function getOptOutTimestamp() {
-    return $this->data['opted_out_timestamp'];
+    return $this->data['opted_out_timestamp'] ?? FALSE;
   }
 
   public function getOptInIsoDateTime() {
@@ -149,10 +149,12 @@ class Contact {
     $this->data = $data;
   }
 
+
+
   /**
    * Get Silverpop connector object.
    *
-   * @return \SilverpopConnector\SilverpopXmlConnector
+   * @return \SilverpopConnector\SilverpopConnector
    */
   protected function getSilverPop() {
     if (!$this->silverPop) {
