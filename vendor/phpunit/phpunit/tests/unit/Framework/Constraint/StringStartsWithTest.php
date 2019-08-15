@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,66 +7,43 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestFailure;
 
-/**
- * @small
- */
-final class StringStartsWithTest extends ConstraintTestCase
+class StringStartsWithTest extends ConstraintTestCase
 {
-    public function testConstraintStringStartsWithCorrectValueAndReturnResult(): void
+    public function testConstraintStringStartsWithCorrectValueAndReturnResult()
     {
         $constraint = new StringStartsWith('prefix');
 
         $this->assertTrue($constraint->evaluate('prefixfoo', '', true));
     }
 
-    public function testConstraintStringStartsWithNotCorrectValueAndReturnResult(): void
+    public function testConstraintStringStartsWithNotCorrectValueAndReturnResult()
     {
         $constraint = new StringStartsWith('prefix');
 
         $this->assertFalse($constraint->evaluate('error', '', true));
     }
 
-    public function testConstraintStringStartsWithCorrectNumericValueAndReturnResult(): void
-    {
-        $constraint = new StringStartsWith('0E1');
-
-        $this->assertTrue($constraint->evaluate('0E1zzz', '', true));
-    }
-
-    public function testConstraintStringStartsWithCorrectSingleZeroAndReturnResult(): void
-    {
-        $constraint = new StringStartsWith('0');
-
-        $this->assertTrue($constraint->evaluate('0ABC', '', true));
-    }
-
-    public function testConstraintStringStartsWithNotCorrectNumericValueAndReturnResult(): void
-    {
-        $constraint = new StringStartsWith('0E1');
-
-        $this->assertFalse($constraint->evaluate('0E2zzz', '', true));
-    }
-
-    public function testConstraintStringStartsWithToStringMethod(): void
+    public function testConstraintStringStartsWithToStringMethod()
     {
         $constraint = new StringStartsWith('prefix');
 
         $this->assertEquals('starts with "prefix"', $constraint->toString());
     }
 
-    public function testConstraintStringStartsWitCountMethod(): void
+    public function testConstraintStringStartsWitCountMethod()
     {
         $constraint = new StringStartsWith('prefix');
 
         $this->assertCount(1, $constraint);
     }
 
-    public function testConstraintStringStartsWithNotCorrectValueAndExpectation(): void
+    public function testConstraintStringStartsWithNotCorrectValueAndExpectation()
     {
         $constraint = new StringStartsWith('prefix');
 
@@ -88,7 +65,7 @@ EOF
         $this->fail();
     }
 
-    public function testConstraintStringStartsWithNotCorrectValueExceptionAndCustomMessage(): void
+    public function testConstraintStringStartsWithNotCorrectValueExceptionAndCustomMessage()
     {
         $constraint = new StringStartsWith('prefix');
 
@@ -97,8 +74,7 @@ EOF
         } catch (ExpectationFailedException $e) {
             $this->assertEquals(
                 <<<EOF
-custom message
-Failed asserting that 'error' starts with "prefix".
+custom message\nFailed asserting that 'error' starts with "prefix".
 
 EOF
                 ,

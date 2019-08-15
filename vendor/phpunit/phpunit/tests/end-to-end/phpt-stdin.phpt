@@ -3,8 +3,9 @@ PHPT runner supports STDIN section
 --STDIN--
 Hello World
 --FILE--
-<?php declare(strict_types=1);
-$input = \file_get_contents('php://stdin');
-print $input;
+<?php
+$input = file_get_contents('php://stdin');
+echo $input;
+?>
 --EXPECT--
 Hello World

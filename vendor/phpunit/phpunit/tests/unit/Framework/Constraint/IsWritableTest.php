@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,19 +7,17 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestFailure;
 
-/**
- * @small
- */
-final class IsWritableTest extends ConstraintTestCase
+class IsWritableTest extends ConstraintTestCase
 {
-    public function testConstraintIsWritable(): void
+    public function testConstraintIsWritable()
     {
-        $constraint = new IsWritable;
+        $constraint = new IsWritable();
 
         $this->assertFalse($constraint->evaluate('foo', '', true));
         $this->assertEquals('is writable', $constraint->toString());

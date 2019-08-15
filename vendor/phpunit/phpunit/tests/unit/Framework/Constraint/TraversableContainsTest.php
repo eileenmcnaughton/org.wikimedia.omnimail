@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,24 +7,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestFailure;
 
-/**
- * @small
- */
-final class TraversableContainsTest extends ConstraintTestCase
+class TraversableContainsTest extends ConstraintTestCase
 {
-    public function testConstraintTraversableCheckForNonObjectIdentityForDefaultCase(): void
-    {
-        $constraint = new TraversableContains('foo', true, true);
-
-        $this->assertTrue($constraint->evaluate(['foo'], '', true));
-    }
-
-    public function testConstraintTraversableCheckForObjectIdentityForDefaultCase(): void
+    public function testConstraintTraversableCheckForObjectIdentityForDefaultCase()
     {
         $constraint = new TraversableContains('foo');
 
@@ -32,7 +23,7 @@ final class TraversableContainsTest extends ConstraintTestCase
         $this->assertTrue($constraint->evaluate([true], '', true));
     }
 
-    public function testConstraintTraversableCheckForObjectIdentityForPrimitiveType(): void
+    public function testConstraintTraversableCheckForObjectIdentityForPrimitiveType()
     {
         $constraint = new TraversableContains('foo', true, true);
 
@@ -40,28 +31,28 @@ final class TraversableContainsTest extends ConstraintTestCase
         $this->assertFalse($constraint->evaluate([true], '', true));
     }
 
-    public function testConstraintTraversableWithRightValue(): void
+    public function testConstraintTraversableWithRightValue()
     {
         $constraint = new TraversableContains('foo');
 
         $this->assertTrue($constraint->evaluate(['foo'], '', true));
     }
 
-    public function testConstraintTraversableWithFailValue(): void
+    public function testConstraintTraversableWithFailValue()
     {
         $constraint = new TraversableContains('foo');
 
         $this->assertFalse($constraint->evaluate(['bar'], '', true));
     }
 
-    public function testConstraintTraversableCountMethods(): void
+    public function testConstraintTraversableCountMethods()
     {
         $constraint = new TraversableContains('foo');
 
         $this->assertCount(1, $constraint);
     }
 
-    public function testConstraintTraversableEvaluateMethodWithFailExample(): void
+    public function testConstraintTraversableEvaluateMethodWithFailExample()
     {
         $constraint = new TraversableContains('foo');
 
@@ -82,28 +73,7 @@ EOF
         $this->fail();
     }
 
-    public function testConstraintTraversableEvaluateMethodWithFailExample2(): void
-    {
-        $constraint = new TraversableContains('foo' . "\n");
-
-        try {
-            $constraint->evaluate(['bar']);
-        } catch (ExpectationFailedException $e) {
-            $this->assertEquals(
-                <<<EOF
-Failed asserting that an array contains "foo\n".
-
-EOF
-                ,
-                TestFailure::exceptionToString($e)
-            );
-
-            return;
-        }
-        $this->fail();
-    }
-
-    public function testConstraintTraversableEvaluateMethodWithFailExampleWithCustomMessage(): void
+    public function testConstraintTraversableEvaluateMethodWithFailExampleWithCustomMessage()
     {
         $constraint = new TraversableContains('foo');
 
@@ -126,21 +96,21 @@ EOF
         $this->fail();
     }
 
-    public function testConstraintTraversableToStringMethodsWithStdClass(): void
+    public function testConstraintTraversableToStringMethodsWithStdClass()
     {
         $object     = new \stdClass;
         $constraint = new TraversableContains($object);
         $this->assertStringMatchesFormat('contains stdClass Object &%s ()', $constraint->toString());
     }
 
-    public function testConstraintTraversableToStringMethods(): void
+    public function testConstraintTraversableToStringMethods()
     {
         $constraint = new TraversableContains('foo');
 
         $this->assertEquals("contains 'foo'", $constraint->toString());
     }
 
-    public function testConstraintTraversableToStringMethodsWithSplObjectStorage(): void
+    public function testConstraintTraversableToStringMethodsWithSplObjectStorage()
     {
         $object     = new \stdClass;
         $constraint = new TraversableContains($object);
@@ -152,7 +122,7 @@ EOF
         $this->assertTrue($constraint->evaluate($storage, '', true));
     }
 
-    public function testConstraintTraversableStdClassForFailSplObjectStorage(): void
+    public function testConstraintTraversableStdClassForFailSplObjectStorage()
     {
         $object     = new \stdClass;
         $constraint = new TraversableContains($object);
@@ -175,7 +145,7 @@ EOF
         $this->fail();
     }
 
-    public function testConstraintTraversableStdClassForFailSplObjectStorageWithCustomMessage(): void
+    public function testConstraintTraversableStdClassForFailSplObjectStorageWithCustomMessage()
     {
         $object     = new \stdClass;
         $constraint = new TraversableContains($object);

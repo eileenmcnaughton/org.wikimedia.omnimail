@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,17 +7,12 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
-use PHPUnit\Framework\ExpectationFailedException;
-use PHPUnit\Framework\TestFailure;
-
-/**
- * @small
- */
-final class CountTest extends ConstraintTestCase
+class CountTest extends ConstraintTestCase
 {
-    public function testCount(): void
+    public function testCount()
     {
         $countConstraint = new Count(3);
         $this->assertTrue($countConstraint->evaluate([1, 2, 3], '', true));
@@ -35,7 +30,7 @@ final class CountTest extends ConstraintTestCase
         $this->assertTrue($countConstraint->evaluate($ia2, '', true));
     }
 
-    public function testCountDoesNotChangeIteratorKey(): void
+    public function testCountDoesNotChangeIteratorKey()
     {
         $countConstraint = new Count(2);
 
@@ -102,7 +97,7 @@ final class CountTest extends ConstraintTestCase
         $this->assertFalse($it->valid());
     }
 
-    public function testCountGeneratorsDoNotRewind(): void
+    public function testCountGeneratorsDoNotRewind()
     {
         $generatorMaker = new \TestGeneratorMaker;
 
@@ -134,7 +129,7 @@ final class CountTest extends ConstraintTestCase
         $this->assertEquals(null, $generator->current());
     }
 
-    public function testCountTraversable(): void
+    public function testCountTraversable()
     {
         $countConstraint = new Count(5);
 
@@ -147,40 +142,5 @@ final class CountTest extends ConstraintTestCase
         $this->assertNotInstanceOf(\Iterator::class, $datePeriod);
         $this->assertNotInstanceOf(\IteratorAggregate::class, $datePeriod);
         $this->assertTrue($countConstraint->evaluate($datePeriod, '', true));
-    }
-
-    public function testCountCanBeExportedToString(): void
-    {
-        $countConstraint = new Count(1);
-
-        $this->assertEquals('count matches 1', $countConstraint->toString());
-    }
-
-    public function testCountEvaluateReturnsNullWithNonCountableAndNonTraversableOther(): void
-    {
-        $countConstraint = new Count(1);
-
-        try {
-            $this->assertNull($countConstraint->evaluate(1));
-        } catch (ExpectationFailedException  $e) {
-            $this->assertEquals(
-                <<<EOF
-Failed asserting that actual size 0 matches expected size 1.
-
-EOF
-                ,
-                TestFailure::exceptionToString($e)
-            );
-        }
-    }
-
-    /**
-     * @ticket https://github.com/sebastianbergmann/phpunit/issues/3743
-     */
-    public function test_EmptyIterator_is_handled_correctly(): void
-    {
-        $constraint = new Count(0);
-
-        $this->assertTrue($constraint->evaluate(new \EmptyIterator, '', true));
     }
 }

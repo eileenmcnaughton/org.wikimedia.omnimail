@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,17 +7,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestFailure;
 
-/**
- * @small
- */
-final class RegularExpressionTest extends ConstraintTestCase
+class RegularExpressionTest extends ConstraintTestCase
 {
-    public function testConstraintRegularExpression(): void
+    public function testConstraintRegularExpression()
     {
         $constraint = new RegularExpression('/foo/');
 
@@ -44,7 +42,7 @@ EOF
         $this->fail();
     }
 
-    public function testConstraintRegularExpression2(): void
+    public function testConstraintRegularExpression2()
     {
         $constraint = new RegularExpression('/foo/');
 

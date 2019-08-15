@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,17 +7,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestFailure;
 
-/**
- * @small
- */
-final class GreaterThanTest extends ConstraintTestCase
+class GreaterThanTest extends ConstraintTestCase
 {
-    public function testConstraintGreaterThan(): void
+    public function testConstraintGreaterThan()
     {
         $constraint = new GreaterThan(1);
 
@@ -44,7 +42,7 @@ EOF
         $this->fail();
     }
 
-    public function testConstraintGreaterThan2(): void
+    public function testConstraintGreaterThan2()
     {
         $constraint = new GreaterThan(1);
 

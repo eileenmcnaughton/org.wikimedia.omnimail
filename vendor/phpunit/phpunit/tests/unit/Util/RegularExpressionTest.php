@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,54 +7,44 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Util;
 
 use PHPUnit\Framework\TestCase;
 
-/**
- * @small
- */
-final class RegularExpressionTest extends TestCase
+class RegularExpressionTest extends TestCase
 {
-    public function validRegexpProvider(): array
+    public function validRegexpProvider()
     {
         return [
-            ['#valid regexp#', 'valid regexp', 1],
-            [';val.*xp;', 'valid regexp', 1],
-            ['/val.*xp/i', 'VALID REGEXP', 1],
-            ['/a val.*p/', 'valid regexp', 0],
+          ['#valid regexp#', 'valid regexp', 1],
+          [';val.*xp;', 'valid regexp', 1],
+          ['/val.*xp/i', 'VALID REGEXP', 1],
+          ['/a val.*p/','valid regexp', 0],
         ];
     }
 
-    public function invalidRegexpProvider(): array
+    public function invalidRegexpProvider()
     {
         return [
-            ['valid regexp', 'valid regexp'],
-            [';val.*xp', 'valid regexp'],
-            ['val.*xp/i', 'VALID REGEXP'],
+          ['valid regexp', 'valid regexp'],
+          [';val.*xp', 'valid regexp'],
+          ['val.*xp/i', 'VALID REGEXP'],
         ];
     }
 
     /**
-     * @testdox Valid regex $pattern on $subject returns $return
      * @dataProvider validRegexpProvider
-     *
-     * @throws \Exception
-     * @throws \PHPUnit\Framework\ExpectationFailedException
      */
-    public function testValidRegex($pattern, $subject, $return): void
+    public function testValidRegex($pattern, $subject, $return)
     {
         $this->assertEquals($return, RegularExpression::safeMatch($pattern, $subject));
     }
 
     /**
-     * @testdox Invalid regex $pattern on $subject
      * @dataProvider invalidRegexpProvider
-     *
-     * @throws \Exception
-     * @throws \PHPUnit\Framework\ExpectationFailedException
      */
-    public function testInvalidRegex($pattern, $subject): void
+    public function testInvalidRegex($pattern, $subject)
     {
         $this->assertFalse(RegularExpression::safeMatch($pattern, $subject));
     }

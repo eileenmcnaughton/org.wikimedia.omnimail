@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,59 +7,41 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestFailure;
 
-/**
- * @small
- */
-final class StringEndsWithTest extends ConstraintTestCase
+class StringEndsWithTest extends ConstraintTestCase
 {
-    public function testConstraintStringEndsWithCorrectValueAndReturnResult(): void
+    public function testConstraintStringEndsWithCorrectValueAndReturnResult()
     {
         $constraint = new StringEndsWith('suffix');
-
         $this->assertTrue($constraint->evaluate('foosuffix', '', true));
     }
 
-    public function testConstraintStringEndsWithNotCorrectValueAndReturnResult(): void
+    public function testConstraintStringEndsWithNotCorrectValueAndReturnResult()
     {
         $constraint = new StringEndsWith('suffix');
-
         $this->assertFalse($constraint->evaluate('suffixerror', '', true));
     }
 
-    public function testConstraintStringEndsWithCorrectNumericValueAndReturnResult(): void
-    {
-        $constraint = new StringEndsWith('0E1');
-
-        $this->assertTrue($constraint->evaluate('zzz0E1', '', true));
-    }
-
-    public function testConstraintStringEndsWithNotCorrectNumericValueAndReturnResult(): void
-    {
-        $constraint = new StringEndsWith('0E1');
-
-        $this->assertFalse($constraint->evaluate('zzz0E2', '', true));
-    }
-
-    public function testConstraintStringEndsWithToStringMethod(): void
+    public function testConstraintStringEndsWithToStringMethod()
     {
         $constraint = new StringEndsWith('suffix');
 
         $this->assertEquals('ends with "suffix"', $constraint->toString());
     }
 
-    public function testConstraintStringEndsWithCountMethod(): void
+    public function testConstraintStringEndsWithCountMethod()
     {
         $constraint = new StringEndsWith('suffix');
 
         $this->assertCount(1, $constraint);
     }
 
-    public function testConstraintStringEndsWithNotCorrectValueAndExpectation(): void
+    public function testConstraintStringEndsWithNotCorrectValueAndExpectation()
     {
         $constraint = new StringEndsWith('suffix');
 
@@ -81,7 +63,7 @@ EOF
         $this->fail();
     }
 
-    public function testConstraintStringEndsWithNotCorrectValueExceptionAndCustomMessage(): void
+    public function testConstraintStringEndsWithNotCorrectValueExceptionAndCustomMessage()
     {
         $constraint = new StringEndsWith('suffix');
 

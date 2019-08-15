@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -12,17 +12,14 @@ namespace PHPUnit\Runner\Filter;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\TestSuite;
 
-/**
- * @small
- */
-final class NameFilterIteratorTest extends TestCase
+class NameFilterIteratorTest extends TestCase
 {
-    public function testCaseSensitiveMatch(): void
+    public function testCaseSensitiveMatch()
     {
         $this->assertTrue($this->createFilter('BankAccountTest')->accept());
     }
 
-    public function testCaseInsensitiveMatch(): void
+    public function testCaseInsensitiveMatch()
     {
         $this->assertTrue($this->createFilter('bankaccounttest')->accept());
     }

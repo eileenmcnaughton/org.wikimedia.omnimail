@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,17 +7,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestFailure;
 
-/**
- * @small
- */
-final class StringContainsTest extends ConstraintTestCase
+class StringContainsTest extends ConstraintTestCase
 {
-    public function testConstraintStringContains(): void
+    public function testConstraintStringContains()
     {
         $constraint = new StringContains('foo');
 
@@ -44,7 +42,7 @@ EOF
         $this->fail();
     }
 
-    public function testConstraintStringContainsWhenIgnoreCase(): void
+    public function testConstraintStringContainsWhenIgnoreCase()
     {
         $constraint = new StringContains('oryginał', true);
 
@@ -52,14 +50,14 @@ EOF
         $this->assertTrue($constraint->evaluate('ORYGINAŁ', '', true));
         $this->assertTrue($constraint->evaluate('oryginał', '', true));
         $this->assertEquals('contains "oryginał"', $constraint->toString());
-        $this->assertCount(1, $constraint);
+        $this->assertEquals(1, \count($constraint));
 
         $this->expectException(ExpectationFailedException::class);
 
         $constraint->evaluate('oryginal');
     }
 
-    public function testConstraintStringContainsForUtf8StringWhenNotIgnoreCase(): void
+    public function testConstraintStringContainsForUtf8StringWhenNotIgnoreCase()
     {
         $constraint = new StringContains('oryginał', false);
 
@@ -67,14 +65,14 @@ EOF
         $this->assertFalse($constraint->evaluate('ORYGINAŁ', '', true));
         $this->assertTrue($constraint->evaluate('oryginał', '', true));
         $this->assertEquals('contains "oryginał"', $constraint->toString());
-        $this->assertCount(1, $constraint);
+        $this->assertEquals(1, \count($constraint));
 
         $this->expectException(ExpectationFailedException::class);
 
         $constraint->evaluate('oryginal');
     }
 
-    public function testConstraintStringContains2(): void
+    public function testConstraintStringContains2()
     {
         $constraint = new StringContains('foo');
 
@@ -95,14 +93,5 @@ EOF
         }
 
         $this->fail();
-    }
-
-    public function testEvaluateEmptyStringInFoo(): void
-    {
-        $stringContains = new StringContains('');
-
-        $stringContains->evaluate('foo');
-
-        $this->assertSame('contains ""', $stringContains->toString());
     }
 }

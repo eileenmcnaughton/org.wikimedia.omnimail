@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,47 +7,45 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestFailure;
 
-/**
- * @small
- */
-final class DirectoryExistsTest extends ConstraintTestCase
+class DirectoryExistsTest extends ConstraintTestCase
 {
-    public function testDefaults(): void
+    public function testDefaults()
     {
-        $constraint = new DirectoryExists;
+        $constraint = new DirectoryExists();
 
         $this->assertCount(1, $constraint);
         $this->assertSame('directory exists', $constraint->toString());
     }
 
-    public function testEvaluateReturnsFalseWhenDirectoryDoesNotExist(): void
+    public function testEvaluateReturnsFalseWhenDirectoryDoesNotExist()
     {
         $directory = __DIR__ . '/NonExistentDirectory';
 
-        $constraint = new DirectoryExists;
+        $constraint = new DirectoryExists();
 
         $this->assertFalse($constraint->evaluate($directory, '', true));
     }
 
-    public function testEvaluateReturnsTrueWhenDirectoryExists(): void
+    public function testEvaluateReturnsTrueWhenDirectoryExists()
     {
         $directory = __DIR__;
 
-        $constraint = new DirectoryExists;
+        $constraint = new DirectoryExists();
 
         $this->assertTrue($constraint->evaluate($directory, '', true));
     }
 
-    public function testEvaluateThrowsExpectationFailedExceptionWhenDirectoryDoesNotExist(): void
+    public function testEvaluateThrowsExpectationFailedExceptionWhenDirectoryDoesNotExist()
     {
         $directory = __DIR__ . '/NonExistentDirectory';
 
-        $constraint = new DirectoryExists;
+        $constraint = new DirectoryExists();
 
         try {
             $constraint->evaluate($directory);

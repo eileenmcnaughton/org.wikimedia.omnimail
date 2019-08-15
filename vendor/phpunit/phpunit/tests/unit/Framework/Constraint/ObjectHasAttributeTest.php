@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 /*
  * This file is part of PHPUnit.
  *
@@ -7,17 +7,15 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
+
 namespace PHPUnit\Framework\Constraint;
 
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestFailure;
 
-/**
- * @small
- */
-final class ObjectHasAttributeTest extends ConstraintTestCase
+class ObjectHasAttributeTest extends ConstraintTestCase
 {
-    public function testConstraintObjectHasAttribute(): void
+    public function testConstraintObjectHasAttribute()
     {
         $constraint = new ObjectHasAttribute('privateAttribute');
 
@@ -44,7 +42,7 @@ EOF
         $this->fail();
     }
 
-    public function testConstraintObjectHasAttribute2(): void
+    public function testConstraintObjectHasAttribute2()
     {
         $constraint = new ObjectHasAttribute('privateAttribute');
 
