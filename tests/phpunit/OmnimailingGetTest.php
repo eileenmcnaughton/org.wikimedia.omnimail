@@ -21,28 +21,14 @@ require_once __DIR__ . '/OmnimailBaseTestClass.php';
  *       a. Do all that using setupHeadless() and Civi\Test.
  *       b. Disable TransactionalInterface, and handle all setup/teardown yourself.
  *
- * @group e2e
+ * @group headless
  */
-class OmnimailingGetTest extends OmnimailBaseTestClass implements EndToEndInterface, TransactionalInterface {
-
-  public function setUpHeadless() {
-    // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
-    // See: https://github.com/civicrm/org.civicrm.testapalooza/blob/master/civi-test.md
-    return \Civi\Test::e2e()
-      ->installMe(__DIR__)
-      ->apply();
-  }
-
-  public function setUp() {
-    parent::setUp();
-  }
-
-  public function tearDown() {
-    parent::tearDown();
-  }
+class OmnimailingGetTest extends OmnimailBaseTestClass {
 
   /**
    * Example: Test that a version is returned.
+   *
+   * @throws \CRM_Core_Exception
    */
   public function testOmnimailingGet() {
     $responses = array(
@@ -51,9 +37,22 @@ class OmnimailingGetTest extends OmnimailBaseTestClass implements EndToEndInterf
       file_get_contents(__DIR__ . '/Responses/GetMailingTemplateResponse.txt'),
       file_get_contents(__DIR__ . '/Responses/GetMailingTemplateResponse2.txt'),
       file_get_contents(__DIR__ . '/Responses/GetMailingTemplateResponse2.txt'),
+      file_get_contents(__DIR__ . '/Responses/LoginHtml.html'),
+      '',
+      file_get_contents(__DIR__ . '/Responses/QueryListHtml.html'),
+      file_get_contents(__DIR__ . '/Responses/GetQueryResponse.txt'),
+      file_get_contents(__DIR__ . '/Responses/LoginHtml.html'),
+      '',
+      file_get_contents(__DIR__ . '/Responses/QueryListHtml.html'),
+      file_get_contents(__DIR__ . '/Responses/GetQueryResponse.txt'),
     );
-    $mailings = civicrm_api3('Omnimailing', 'get', array('mail_provider' => 'Silverpop', 'client' => $this->getMockRequest($responses), 'username' => 'Donald', 'password' => 'quack'));
+    Civi::settings()->set('omnimail_omnihell_enabled', 1);
+    $mailings = $this->callAPISuccess('Omnimailing', 'get', ['mail_provider' => 'Silverpop', 'client' => $this->getMockRequest($responses), 'username' => 'Donald', 'password' => 'quack']);
     $this->assertEquals(2, $mailings['count']);
+    $firstMailing = $mailings['values'][0];
+    $this->assertEquals('cool email 🌻', $firstMailing['subject']);
+    $this->assertEquals('WHEN (COUNTRY is equal to IL AND ISOLANG is equal to HE AND LATEST_DONATION_DATE is before JAN 1, 2019 AND EMAIL_DOMAIN_PART is not equal to one of the following (AOL.COM | NETSCAPE.COM | NETSCAPE.NET | CS.COM | AIM.COM | WMCONNECT.COM | VERIZON.NET) OR (EMAIL is equal to FUNDRAISINGEMAIL-JAJP+HEIL@WIKIMEDIA.ORG AND COUNTRY is equal to IL)) AND SEGMENT is equal to 2', $firstMailing['list_criteria']);
+    $this->assertEquals('( is in contact list 1234567 AND Segment is equal to 328 AND latest_donation_date is before 01/01/2019 ) OR Email is equal to info@examplee.org', $firstMailing['list_string']);
   }
 
 }

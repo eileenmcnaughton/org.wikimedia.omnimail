@@ -21,21 +21,9 @@ require_once __DIR__ . '/OmnimailBaseTestClass.php';
  *       a. Do all that using setupHeadless() and Civi\Test.
  *       b. Disable TransactionalInterface, and handle all setup/teardown yourself.
  *
- * @group e2e
+ * @group headless
  */
-class OmnigroupmemberGetTest extends OmnimailBaseTestClass implements EndToEndInterface, TransactionalInterface {
-
-  public function setUpHeadless() {
-    // Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
-    // See: https://github.com/civicrm/org.civicrm.testapalooza/blob/master/civi-test.md
-    return \Civi\Test::e2e()
-      ->installMe(__DIR__)
-      ->apply();
-  }
-
-  public function tearDown() {
-    parent::tearDown();
-  }
+class OmnigroupmemberGetTest extends OmnimailBaseTestClass {
 
   /**
    * Example: Test that a version is returned.

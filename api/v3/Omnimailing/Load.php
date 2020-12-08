@@ -15,12 +15,13 @@
  * @throws \CiviCRM_API3_Exception
  */
 function civicrm_api3_omnimailing_load($params) {
-  $values = array();
-  $getParams = array(
+  $values = [];
+  $getParams = [
     'mail_provider' => $params['mail_provider'],
     'start_date' => $params['start_date'],
     'end_date' => $params['end_date'],
-    'return' => array(
+    'debug' => !empty($params['debug']),
+    'return' => [
       'external_identifier',
       'subject',
       'scheduled_date',
@@ -36,8 +37,8 @@ function civicrm_api3_omnimailing_load($params) {
       'number_opened_total',
       'number_bounced',
       'number_sent',
-    ),
-  );
+    ],
+  ];
   if (isset($params['username']) && isset($params['password'])) {
     $getParams['username'] = $params['username'];
     $getParams['password'] = $params['password'];
@@ -47,47 +48,61 @@ function civicrm_api3_omnimailing_load($params) {
   }
   $mailings = civicrm_api3('Omnimailing', 'get', $getParams);
 
-  $customFieldID = civicrm_api3('CustomField', 'getvalue', ['name' => 'query_criteria', 'return' => 'id']);
-  foreach ($mailings['values']  as $mailing) {
+  $customFields = civicrm_api3('CustomField', 'get', ['name' => ['IN' => ['query_criteria', 'query_string']], 'return' => ['id', 'name']])['values'];
+  foreach ($customFields as $field) {
+    if ($field['name'] === 'query_criteria') {
+      $criteriaField = 'custom_' . $field['id'];
+    }
+    else {
+      $listField = 'custom_' . $field['id'];
+    }
+  }
+  foreach ($mailings['values'] as $mailing) {
     $campaign = _civicrm_api3_omnimailing_load_api_replace(
       'Campaign',
-      array('name' => 'sp' . $mailing['external_identifier']),
-      array(
+      ['name' => 'sp' . $mailing['external_identifier']],
+      [
         'title' => 'sp' . $mailing['external_identifier'],
-        'description' => $mailing['subject'],
+        'description' => _omnimailing_strip_emojis($mailing['subject']),
         'campaign_type_id' => 'Email',
         'start_date' => date('Y-m-d H:i:s', $mailing['start_date']),
         'status_id' => 'Completed',
-    ));
+      ]);
 
     CRM_Core_PseudoConstant::flush();
 
-    $result =  _civicrm_api3_omnimailing_load_api_replace(
+    $mailingParams = [
+      'body_html' => !empty($mailing['body_html']) ? _omnimailing_strip_emojis($mailing['body_html']) : '',
+      'body_text' => !empty($mailing['body_text']) ? _omnimailing_strip_emojis($mailing['body_text']) : '',
+      'name' => !empty($mailing['name']) ? $mailing['name'] : 'sp' . $mailing['external_identifier'],
+      'subject' => substr(_omnimailing_strip_emojis($mailing['subject']), 0, 128),
+      'created_date' => date('Y-m-d H:i:s', $mailing['scheduled_date']),
+      'hash' => 'sp' . $mailing['external_identifier'],
+      'scheduled_date' => date('Y-m-d H:i:s', $mailing['scheduled_date']),
+      'campaign_id' => $campaign['id'],
+    ];
+    if (!empty(trim($mailing['list_criteria']))) {
+      $mailingParams[$criteriaField] = $mailing['list_criteria'];
+    }
+    if (!empty(trim($mailing['list_string']))) {
+      $mailingParams[$listField] = $mailing['list_string'];
+    }
+    $result = _civicrm_api3_omnimailing_load_api_replace(
       'Mailing',
-      array('hash' => 'sp' . $mailing['external_identifier']),
-      array(
-        'body_html' => !empty($mailing['body_html']) ? $mailing['body_html'] : '',
-        'body_text' => !empty($mailing['body_text']) ? $mailing['body_text'] : '',
-        'name' => !empty($mailing['name']) ? $mailing['name'] : 'sp' . $mailing['external_identifier'],
-        'subject' => substr($mailing['subject'], 0, 128),
-        'created_date' => date('Y-m-d H:i:s', $mailing['scheduled_date']),
-        'hash' => 'sp' . $mailing['external_identifier'],
-        'scheduled_date' => date('Y-m-d H:i:s', $mailing['scheduled_date']),
-        'campaign_id' => $campaign['id'],
-        'custom_' . $customFieldID => $mailing['list_criteria'],
-      ),
-      array(
+      ['hash' => 'sp' . $mailing['external_identifier']],
+      $mailingParams,
+      [
         'is_completed' => 1,
         '_skip_evil_bao_auto_recipients_' => 1,
         '_skip_evil_bao_auto_schedule_' => 1,
-      )
+      ]
     );
     $values[] = $result;
 
     _civicrm_api3_omnimailing_load_api_replace(
       'MailingStats',
-      array('mailing_id' => $result['id']),
-      array(
+      ['mailing_id' => $result['id']],
+      [
         'mailing_id' => $result['id'],
         'mailing_name' => !empty($mailing['name']) ? $mailing['name'] : 'sp' . $mailing['external_identifier'],
         'is_completed' => TRUE,
@@ -109,7 +124,7 @@ function civicrm_api3_omnimailing_load($params) {
         // 'clicked_contribution_page'
         // 'contribution_count'
         // 'contribution_total'
-      )
+      ]
     );
   }
   return civicrm_api3_create_success($values);
@@ -121,26 +136,26 @@ function civicrm_api3_omnimailing_load($params) {
  * @param $params
  */
 function _civicrm_api3_omnimailing_load_spec(&$params) {
-  $params['username'] = array(
+  $params['username'] = [
     'title' => ts('User name'),
-  );
-  $params['password'] = array(
+  ];
+  $params['password'] = [
     'title' => ts('Password'),
-  );
-  $params['mail_provider'] = array(
+  ];
+  $params['mail_provider'] = [
     'title' => ts('Name of Mailer'),
-    'api.required' => TRUE,
-  );
-  $params['start_date'] = array(
+    'api.default' => 'Silverpop',
+  ];
+  $params['start_date'] = [
     'title' => ts('Date to fetch from'),
     'api.default' => '1 week ago',
     'type' => CRM_Utils_Type::T_TIMESTAMP,
-  );
-  $params['end_date'] = array(
+  ];
+  $params['end_date'] = [
     'title' => ts('Date to fetch to'),
     'type' => CRM_Utils_Type::T_TIMESTAMP,
     'api.default' => 'now',
-  );
+  ];
 
 }
 
@@ -149,8 +164,6 @@ function _civicrm_api3_omnimailing_load_spec(&$params) {
  *
  * This does what I thought 'replace' already did & does a retrieve + an insert if needed.
  *
- * @todo centralise this somewhere to be available for other calls.
- *
  * @param string $entity
  * @param array $retrieveParams
  * @param array $updateParams
@@ -158,8 +171,10 @@ function _civicrm_api3_omnimailing_load_spec(&$params) {
  *
  * @return array
  *   Entity created or retrieved.
+ * @todo centralise this somewhere to be available for other calls.
+ *
  */
-function _civicrm_api3_omnimailing_load_api_replace($entity, $retrieveParams, $updateParams, $extraParams = array()) {
+function _civicrm_api3_omnimailing_load_api_replace($entity, $retrieveParams, $updateParams, $extraParams = []) {
   $retrieveParams['return'] = array_keys($updateParams);
   $preExisting = civicrm_api3($entity, 'get', $retrieveParams);
   if (isset($preExisting['id'])) {
@@ -176,4 +191,28 @@ function _civicrm_api3_omnimailing_load_api_replace($entity, $retrieveParams, $u
   }
   $created = civicrm_api3($entity, 'create', array_merge($updateParams, $extraParams));
   return $created['values'][$created['id']];
+}
+
+
+/**
+ * Strip emojis from string.
+ *
+ * Currently our database does not support utfmb8. Our MariaDb level does but we would need
+ * to convert all tables or at least the mailing ones - which would include the
+ * huge mailing_provider_data table. For now let's hack it here.
+ *
+ * Main discussion taking place on https://github.com/civicrm/civicrm-core/pull/13633/files
+ *
+ * This code taken from http://scriptsof.com/php-remove-emojis-or-4-byte-characters-19
+ *
+ * @param string $string
+ *
+ * @return string|string[]|null
+ */
+function _omnimailing_strip_emojis($string) {
+  return preg_replace('%(?:
+          \xF0[\x90-\xBF][\x80-\xBF]{2}      # planes 1-3
+        | [\xF1-\xF3][\x80-\xBF]{3}          # planes 4-15
+        | \xF4[\x80-\x8F][\x80-\xBF]{2}      # plane 16
+    )%xs', '', $string);
 }

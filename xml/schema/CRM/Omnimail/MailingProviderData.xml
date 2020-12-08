@@ -32,7 +32,7 @@
         <comment>Email Address</comment>
     </field>
     <field>
-        <name>recipient_action_type</name>
+        <name>event_type</name>
         <type>varchar</type>
         <length>255</length>
         <comment>Type of action</comment>
@@ -47,9 +47,15 @@
         <type>int</type>
         <comment>Contact in CiviCRM</comment>
     </field>
+    <foreignKey>
+      <name>contact_id</name>
+      <table>civicrm_contact</table>
+      <comment>Key is declared for civi handling, but not actually included in the table sql. Facilitates merging, searching</comment>
+      <key>id</key>
+    </foreignKey>
     <field>
         <name>is_civicrm_updated</name>
-        <type>bool</type>
+        <type>boolean</type>
         <comment>Has the action been synchronised through to CiviCRM</comment>
     </field>
 </table>

@@ -20,20 +20,26 @@ if (file_exists( __DIR__ . '/../../../vendor/autoload.php')) {
  * @throws \CiviCRM_API3_Exception
  */
 function civicrm_api3_omnimailing_get($params) {
+  // @todo - we should leverage the same code to do this as the Omnirecipient job.
+  // I don't really want to do a restructure right now so a quick hack but a bit todo.
+  date_default_timezone_set('UTC');
+  CRM_Core_DAO::executeQuery("SET TIME_ZONE='+00:00'");
+
+  /* @var \Omnimail\Silverpop\Mailer $mailer */
   $mailer = Omnimail::create($params['mail_provider'], CRM_Omnimail_Helper::getCredentials($params));
-  $mailerParameters = array(
+  $mailerParameters = [
     'StartTimeStamp' => strtotime($params['start_date']),
     'EndTimeStamp' => strtotime($params['end_date']),
-  );
+  ];
 
   $mailings = $mailer->getMailings($mailerParameters)->getResponse();
-  $results = array();
+  $results = [];
   foreach ($mailings as $mailing) {
     try {
       $result = [
         'subject' => $mailing->getSubject(),
         'external_identifier' => $mailing->getMailingIdentifier(),
-        'name' => $mailing->getName(),
+        'name' => substr($mailing->getName(), 0, 128),
         'scheduled_date' => $mailing->getScheduledDate(),
         'start_date' => $mailing->getSendStartDate(),
         'number_sent' => $mailing->getNumberSent(),
@@ -66,13 +72,25 @@ function civicrm_api3_omnimailing_get($params) {
     }
   }
   // We want these to fail hard (I think) so not in the try catch block.
-    foreach ($results as $index => $result) {
-      if (!empty($result['list_id'])) {
+  foreach ($results as $index => $result) {
+    $results[$index]['list_criteria'] = '';
+    if (!empty($result['list_id'])) {
+      if (Civi::settings()->get('omnimail_omnihell_enabled')) {
         // This is kinda just hacked in because it doesn't feel generic at the
         // moment .. pondering....
         $results[$index]['list_criteria'] = civicrm_api3('Omnihell', 'get', array_merge($params, [
           'list_id' => $result['list_id'],
         ]))['values'][0];
+      }
+      try {
+        // There are still some mysteries around the data retrievable this way.
+        // Lets get & store both while both work. We can consolidate when we are comfortable.
+        $results[$index]['list_string'] = $mailer->getQueryCriteria(['QueryIdentifier' => $result['list_id']])->getResponse()->getQueryCriteria();
+      }
+      catch (Exception $e) {
+        // I saw a fail like Request failed: Query Id is not valid.
+        // we should skip rather than crash the job
+      }
     }
   }
   return civicrm_api3_create_success($results);
@@ -84,25 +102,25 @@ function civicrm_api3_omnimailing_get($params) {
  * @param $params
  */
 function _civicrm_api3_omnimailing_get_spec(&$params) {
-  $params['username'] = array(
+  $params['username'] = [
     'title' => ts('User name'),
-  );
-  $params['password'] = array(
+  ];
+  $params['password'] = [
     'title' => ts('Password'),
-  );
-  $params['mail_provider'] = array(
+  ];
+  $params['mail_provider'] = [
     'title' => ts('Name of Mailer'),
-    'api.required' => TRUE,
-  );
-  $params['start_date'] = array(
+    'api.default' => 'Silverpop',
+  ];
+  $params['start_date'] = [
     'title' => ts('Date to fetch from'),
     'api.default' => '1 week ago',
     'type' => CRM_Utils_Type::T_TIMESTAMP,
-  );
-  $params['end_date'] = array(
+  ];
+  $params['end_date'] = [
     'title' => ts('Date to fetch to'),
     'type' => CRM_Utils_Type::T_TIMESTAMP,
     'api.default' => 'now',
-  );
+  ];
 
 }

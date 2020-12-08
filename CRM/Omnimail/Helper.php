@@ -106,11 +106,15 @@ class CRM_Omnimail_Helper {
    * @param $name
    *
    * @return string
+   * @throws \API_Exception
    */
   public static function getInputValueFromResponseWithXpath(\Psr\Http\Message\ResponseInterface $response, $name) {
     $elementWrapper = CRM_Omnimail_Helper::getValueFromResponseWithXPath($response, '//input[@name="' . $name . '"]/@value');
-    foreach ($elementWrapper  as $element) {
-      return $element->nodeValue;
+    if ($elementWrapper->length > 0) {
+      return $elementWrapper->item(0)->nodeValue;
+    }
+    else {
+      throw new API_Exception("Input node $name not found");
     }
   }
 
@@ -127,7 +131,7 @@ class CRM_Omnimail_Helper {
     // We accept client as an input to support unit tests.
     $client = $params['client'] ?? new Client([
       'cookies' => true,
-      // 'debug' => 1,
+      'debug' => $params['debug'] ?? FALSE,
       'headers' => [
         // This is set in Trilogy sample code. Perhaps the reason is you have to
         // log in from a new device - this is from mine.

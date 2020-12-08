@@ -33,7 +33,7 @@
         <name>job_identifier</name>
         <type>varchar</type>
         <comment>optional suffix to disambiguate the job</comment>
-        <length>32</length>
+        <length>512</length>
     </field>
     <field>
         <name>last_timestamp</name>
@@ -55,5 +55,10 @@
         <name>offset</name>
         <type>int unsigned</type>
         <comment>How many lines have been processed</comment>
+    </field>
+    <field>
+        <name>created_date</name>
+        <type>timestamp</type>
+        <comment>When was the job created</comment>
     </field>
 </table>
