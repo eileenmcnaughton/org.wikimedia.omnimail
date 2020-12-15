@@ -22,39 +22,29 @@ class SilverpopBaseTestClass extends BaseTestClass {
   /**
    * Set up a mock request, specifying the body of the response.
    *
-   * @param string $body
+   * @param string|array $body
    *   Body to be returned from the http request.
    *
    * @param array $container
    *   Reference to array to store Request history in.
    * @param bool $authenticateFirst
-   * @return array $container
    */
   protected function setUpMockXMLRequest(&$container, $body, $authenticateFirst = TRUE) {
     $this->silverPop = SilverpopXMLConnector::getInstance();
     $history = Middleware::history($container);
 
     if ($authenticateFirst) {
-      $mock = new MockHandler([
-        new Response(200, [], file_get_contents(__DIR__ . '/Mock/AuthenticateResponse.txt')),
-        new Response(200, [], $body),
-      ]);
+      $this->authenticate();
     }
-    else {
-      $mock = new MockHandler([
-        new Response(200, [], $body),
-      ]);
-    }
+    $responses = (array) $body;
+    $responses[] = file_get_contents(__DIR__ . '/Mock/LogoutResponse.txt');
+    $mock = $this->getMockHandler($responses);
+
     $handler = HandlerStack::create($mock);
     // Add the history middleware to the handler stack.
     $handler->push($history);
     $client = new Client(array('handler' => $handler));
     $this->silverPop->setClient($client);
-
-    if ($authenticateFirst) {
-      $this->silverPop->authenticate('Donald Duck', 'Quack');
-      unset($container[0]);
-    }
   }
 
   /**
@@ -120,6 +110,22 @@ class SilverpopBaseTestClass extends BaseTestClass {
       $mock = new MockHandler($mocks);
     }
     return $mock;
+  }
+
+  /**
+   * @param $container
+   * @param $authenticateFirst
+   *
+   * @return mixed
+   */
+  protected function authenticate() {
+    $mock = new MockHandler([
+      new Response(200, [], file_get_contents(__DIR__ . '/Mock/AuthenticateResponse.txt')),
+    ]);
+    $handler = HandlerStack::create($mock);
+    $client = new Client(['handler' => $handler]);
+    $this->silverPop->setClient($client);
+    $this->silverPop->authenticate('Donald Duck', 'Quack');
   }
 
 }

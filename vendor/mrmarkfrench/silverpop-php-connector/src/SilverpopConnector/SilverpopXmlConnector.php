@@ -7,6 +7,7 @@ use SilverpopConnector\SilverpopBaseConnector;
 use SilverpopConnector\SilverpopRestConnector;
 use SilverpopConnector\SilverpopConnectorException;
 use SilverpopConnector\Xml\ExportList;
+use SilverpopConnector\Xml\GetQuery;
 use SimpleXmlElement;
 use SilverpopConnector\Xml\GetMailingTemplate;
 use SilverpopConnector\Xml\GetAggregateTrackingForMailing;
@@ -27,12 +28,24 @@ use GuzzleHttp\Client;
 class SilverpopXmlConnector extends SilverpopBaseConnector {
   protected static $instance = null;
 
-  protected $baseUrl    = null;
   protected $sftpUrl    = null;
   /**
    * @var \GuzzleHttp\Client
    */
   protected $client;
+
+  /**
+   * Logout from silverpop when the class is destroyed.
+   *
+   * This prevents us using up api sessions and running out.
+   *
+   * https://developer.ibm.com/customer-engagement/docs/watson-marketing/ibm-engage-2/watson-campaign-automation-platform/using-oauth/legacy-authentication-method-jsessionid-user-sessions/
+   *
+   * @throws \SilverpopConnector\SilverpopConnectorException
+   */
+  public function __destruct() {
+    $this->logout();
+  }
 
   /**
    * @return \GuzzleHttp\Client
@@ -42,7 +55,7 @@ class SilverpopXmlConnector extends SilverpopBaseConnector {
       $this->setClient(new Client([
         // Base URI is used with relative requests
         'base_uri' => $this->baseUrl,
-        'timeout'  => 10.0,
+        'timeout' => $this->timeout,
         'allow_redirects' => array('max' => 3),
       ]));
     }
@@ -163,6 +176,9 @@ class SilverpopXmlConnector extends SilverpopBaseConnector {
    * @throws SilverpopConnectorException
    */
   public function authenticate($username = NULL, $password = NULL) {
+    if ($this->sessionId) {
+      return;
+    }
     $client = $this->getClient();
 
     $this->username = empty($username) ? $this->username : $username;
@@ -200,6 +216,21 @@ class SilverpopXmlConnector extends SilverpopBaseConnector {
    */
   public function calculateQuery($params) {
     $template = new CalculateQuery($params);
+    $params = $template->getXml();
+    $result = $this->post($params);
+    return $template->formatResult($result);
+  }
+
+  /**
+   * Get the criteria used for a query list.
+   *
+   * @param $params
+   *  - listId int ID of the list you wish to retrieve.
+   *
+   * @return array
+   */
+  public function getQuery($params) {
+    $template = new getQuery($params);
     $params = $template->getXml();
     $result = $this->post($params);
     return $template->formatResult($result);
@@ -541,23 +572,11 @@ class SilverpopXmlConnector extends SilverpopBaseConnector {
    * @throws SilverpopConnectorException
    */
   public function logout() {
-    $params = "<Envelope>\n\t<Body>\n\t\t<Logout/>\n\t</Body></Envelope>";
-
-    $ch = curl_init();
-    $curlParams = array(
-      CURLOPT_URL            => $this->baseUrl.'/XMLAPI',
-      CURLOPT_FOLLOWLOCATION => 1,
-      CURLOPT_CONNECTTIMEOUT => 10,
-      CURLOPT_MAXREDIRS      => 3,
-      CURLOPT_RETURNTRANSFER => 1,
-      CURLOPT_POST           => 1,
-      CURLOPT_POSTFIELDS     => http_build_query(array('xml'=>$params)),
-      );
-    $set = curl_setopt_array($ch, $curlParams);
-
-    $resultStr = curl_exec($ch);
-    curl_close($ch);
-    $result = $this->checkResponse($resultStr);
+    if (!$this->sessionId) {
+      return;
+    }
+    $client = $this->getClient();
+    $response = $this->post(new SimpleXmlElement("<Logout/>"));
 
     $this->sessionId = null;
   }
@@ -1048,7 +1067,7 @@ class SilverpopXmlConnector extends SilverpopBaseConnector {
     } elseif (!isset($response->Body->RESULT->SUCCESS)) {
       throw new SilverpopConnectorException("No <SUCCESS> element on result: {$xml}");
     } elseif (strtolower($response->Body->RESULT->SUCCESS) != 'true') {
-      throw new SilverpopConnectorException('Request failed: '.$response->Body->Fault->FaultString);
+      throw new SilverpopConnectorException('Request failed: '. $response->Body->Fault->FaultString, (int) $response->Body->Fault->detail->error->errorid);
     }
     return $response;
   }
@@ -1088,7 +1107,20 @@ class SilverpopXmlConnector extends SilverpopBaseConnector {
       $url = "XMLAPI;jsessionid={$this->sessionId}";
     }
     $response = $client->request('POST', $url, array('form_params' => $xmlParams, 'headers' => $curlHeaders));
-    return $this->checkResponse($response->getBody()->getContents());
+    try {
+      return $this->checkResponse($response->getBody()->getContents());
+    }
+    catch (\SilverpopConnector\SilverpopConnectorException $e) {
+      if ($e->getCode() !== 145) {
+        throw $e;
+      }
+      $this->sessionId = NULL;
+      $this->authenticate();
+      $url = "XMLAPI;jsessionid={$this->sessionId}";
+      $response = $client->request('POST', $url, array('form_params' => $xmlParams, 'headers' => $curlHeaders));
+      return $this->checkResponse($response->getBody()->getContents());
+    }
+
   }
 
   /**
@@ -1105,13 +1137,13 @@ class SilverpopXmlConnector extends SilverpopBaseConnector {
   */
   protected function createXmlObject($xml) {
     $use_internal_errors = libxml_use_internal_errors(TRUE);
-    libxml_clear_errors(TRUE);
+    libxml_clear_errors();
 
     $response = simplexml_load_string($xml);
     if ($response === FALSE) {
       throw  new \SilverpopConnector\SilverpopConnectorException('invalid xml received: ' . $xml);
     }
-    libxml_clear_errors(TRUE);
+    libxml_clear_errors();
     libxml_use_internal_errors($use_internal_errors);
     return $response;
   }
