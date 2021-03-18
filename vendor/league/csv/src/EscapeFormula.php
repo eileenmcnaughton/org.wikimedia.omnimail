@@ -126,11 +126,7 @@ class EscapeFormula
     }
 
     /**
-     * Escape a CSV cell if its content is stringable.
-     *
-     * @param mixed $cell the content of the cell
-     *
-     * @return mixed|string the escaped content
+     * Escape a CSV cell.
      */
     protected function escapeField($cell)
     {
@@ -147,17 +143,10 @@ class EscapeFormula
     }
 
     /**
-     * Tells whether the submitted value is stringable.
-     *
-     * @param mixed $value value to check if it is stringable
+     * Tell whether the submitted value is stringable.
      */
     protected function isStringable($value): bool
     {
-        if (is_string($value)) {
-            return true;
-        }
-
-        return is_object($value)
-            && method_exists($value, '__toString');
+        return is_string($value) || (is_object($value) && method_exists($value, '__toString'));
     }
 }

@@ -50,7 +50,10 @@ class RFC4180Field extends php_user_filter
     public $filtername;
 
     /**
-     * @var mixed value passed to passed to stream_filter_append or stream_filter_prepend functions.
+     * Contents of the params parameter passed to stream_filter_append
+     * or stream_filter_prepend functions.
+     *
+     * @var mixed
      */
     public $params;
 
@@ -124,7 +127,7 @@ class RFC4180Field extends php_user_filter
     /**
      * Static method to register the class as a stream filter.
      */
-    public static function register(): void
+    public static function register()
     {
         if (!in_array(self::FILTERNAME, stream_get_filters(), true)) {
             stream_filter_register(self::FILTERNAME, self::class);
@@ -140,12 +143,9 @@ class RFC4180Field extends php_user_filter
     }
 
     /**
-     * @param resource $in
-     * @param resource $out
-     * @param int      $consumed
-     * @param bool     $closing
+     * {@inheritdoc}
      */
-    public function filter($in, $out, &$consumed, $closing): int
+    public function filter($in, $out, &$consumed, $closing)
     {
         while ($bucket = stream_bucket_make_writeable($in)) {
             $bucket->data = str_replace($this->search, $this->replace, $bucket->data);
@@ -159,7 +159,7 @@ class RFC4180Field extends php_user_filter
     /**
      * {@inheritdoc}
      */
-    public function onCreate(): bool
+    public function onCreate()
     {
         if (!$this->isValidParams($this->params)) {
             return false;

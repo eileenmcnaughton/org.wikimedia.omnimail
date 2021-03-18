@@ -42,7 +42,10 @@ class EncloseField extends php_user_filter
     public $filtername;
 
     /**
-     * @var mixed value passed to passed to stream_filter_append or stream_filter_prepend functions.
+     * Contents of the params parameter passed to stream_filter_append
+     * or stream_filter_prepend functions.
+     *
+     * @var mixed
      */
     public $params;
 
@@ -71,7 +74,7 @@ class EncloseField extends php_user_filter
     /**
      * Static method to register the class as a stream filter.
      */
-    public static function register(): void
+    public static function register()
     {
         if (!in_array(self::FILTERNAME, stream_get_filters(), true)) {
             stream_filter_register(self::FILTERNAME, self::class);
@@ -91,7 +94,7 @@ class EncloseField extends php_user_filter
             throw new InvalidArgumentException('The sequence must contain at least one character to force enclosure');
         }
 
-        $formatter = static function (array $record) use ($sequence): array {
+        $formatter = static function (array $record) use ($sequence) {
             foreach ($record as &$value) {
                 $value = $sequence.$value;
             }
@@ -118,19 +121,16 @@ class EncloseField extends php_user_filter
     /**
      * {@inheritdoc}
      */
-    public function onCreate(): bool
+    public function onCreate()
     {
         return isset($this->params['sequence'])
-            && self::isValidSequence($this->params['sequence']);
+            && $this->isValidSequence($this->params['sequence']);
     }
 
     /**
-     * @param resource $in
-     * @param resource $out
-     * @param int      $consumed
-     * @param bool     $closing
+     * {@inheritdoc}
      */
-    public function filter($in, $out, &$consumed, $closing): int
+    public function filter($in, $out, &$consumed, $closing)
     {
         while ($res = stream_bucket_make_writeable($in)) {
             $res->data = str_replace($this->params['sequence'], '', $res->data);

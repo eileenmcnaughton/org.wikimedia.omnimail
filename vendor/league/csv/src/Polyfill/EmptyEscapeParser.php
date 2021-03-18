@@ -19,7 +19,9 @@ use SplFileObject;
 use TypeError;
 use function explode;
 use function get_class;
+use function gettype;
 use function in_array;
+use function is_object;
 use function ltrim;
 use function rtrim;
 use function sprintf;
@@ -65,7 +67,7 @@ final class EmptyEscapeParser
     private static $trim_mask;
 
     /**
-     * @var string|false
+     * @var string|bool
      */
     private static $line;
 
@@ -115,7 +117,7 @@ final class EmptyEscapeParser
         self::$document->rewind();
         while (self::$document->valid()) {
             $record = self::extractRecord();
-            if ([null] === $record || !in_array(null, $record, true)) {
+            if (!in_array(null, $record, true)) {
                 yield $record;
             }
         }
@@ -124,9 +126,11 @@ final class EmptyEscapeParser
     /**
      * Filters the submitted document.
      *
+     * @param SplFileObject|Stream $document
+     *
      * @return SplFileObject|Stream
      */
-    private static function filterDocument(object $document)
+    private static function filterDocument($document)
     {
         if ($document instanceof Stream || $document instanceof SplFileObject) {
             return $document;
@@ -136,7 +140,7 @@ final class EmptyEscapeParser
             '%s::parse expects parameter 1 to be a %s or a SplFileObject object, %s given',
             self::class,
             Stream::class,
-            get_class($document)
+            is_object($document) ? get_class($document) : gettype($document)
         ));
     }
 
@@ -148,18 +152,14 @@ final class EmptyEscapeParser
         $record = [];
         self::$line = self::$document->fgets();
         do {
-            $is_field_enclosed = false;
-            $buffer = '';
-            if (false !== self::$line) {
-                $buffer = ltrim(self::$line, self::$trim_mask);
-            }
-
+            $method = 'extractFieldContent';
+            $buffer = ltrim(self::$line, self::$trim_mask);
             if (($buffer[0] ?? '') === self::$enclosure) {
-                $is_field_enclosed = true;
+                $method = 'extractEnclosedFieldContent';
                 self::$line = $buffer;
             }
 
-            $record[] = $is_field_enclosed ? self::extractEnclosedFieldContent() : self::extractFieldContent();
+            $record[] = self::$method();
         } while (false !== self::$line);
 
         return $record;
@@ -182,13 +182,7 @@ final class EmptyEscapeParser
             return null;
         }
 
-        /** @var array<string> $result */
-        $result = explode(self::$delimiter, self::$line, 2);
-        /** @var string $content */
-        [$content, $remainder] = $result + [1 => false];
-
-        /* @var string|false line */
-        self::$line = $remainder;
+        list($content, self::$line) = explode(self::$delimiter, self::$line, 2) + [1 => false];
         if (false === self::$line) {
             return rtrim($content, "\r\n");
         }
@@ -209,15 +203,13 @@ final class EmptyEscapeParser
      */
     private static function extractEnclosedFieldContent()
     {
-        if (false !== self::$line && self::$line[0] === self::$enclosure) {
+        if ((self::$line[0] ?? '') === self::$enclosure) {
             self::$line = substr(self::$line, 1);
         }
 
         $content = '';
         while (false !== self::$line) {
-            /** @var array $result */
-            $result = explode(self::$enclosure, self::$line, 2);
-            [$buffer, $remainder] = $result + [1 => false];
+            list($buffer, $remainder) = explode(self::$enclosure, self::$line, 2) + [1 => false];
             $content .= $buffer;
             self::$line = $remainder;
             if (false !== self::$line) {
