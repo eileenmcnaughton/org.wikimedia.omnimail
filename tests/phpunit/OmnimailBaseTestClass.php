@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/GuzzleTestTrait.php';
 
+use Civi\Test\Api3TestTrait;
 use Civi\Test\HeadlessInterface;
 use Civi\Test\HookInterface;
 use Civi\Test\TransactionalInterface;
@@ -10,8 +11,11 @@ use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use Omnimail\Omnimail;
+use Omnimail\Silverpop\Connector\SilverpopGuzzleXmlConnector;
 use Omnimail\Silverpop\Credentials;
 use Omnimail\Silverpop\Connector\SilverpopGuzzleConnector;
+use SilverpopConnector\SilverpopRestConnector;
+use SilverpopConnector\SilverpopXmlConnector;
 
 /**
  * FIXME - Add test description.
@@ -29,8 +33,10 @@ use Omnimail\Silverpop\Connector\SilverpopGuzzleConnector;
  */
 class OmnimailBaseTestClass extends \PHPUnit\Framework\TestCase implements HeadlessInterface, TransactionalInterface {
 
-  use \Civi\Test\Api3TestTrait;
+  use Api3TestTrait;
   use GuzzleTestTrait;
+
+  protected $existingSettings = [];
 
   /**
    * Civi\Test has many helpers, like install(), uninstall(), sql(), and sqlFile().
@@ -55,9 +61,13 @@ class OmnimailBaseTestClass extends \PHPUnit\Framework\TestCase implements Headl
 
   public function setUp(): void {
     parent::setUp();
-    civicrm_initialize();
-    Civi::service('settings_manager')->flush();
-    \Civi::$statics['_omnimail_settings'] = [];
+    // This base url is only useful when using the tests to help develop - ie if you call
+    // `$this->setUpClientWithHistoryContainer();` and then run an acoustic api
+    // you can capture the outgoing in incoming responses. However, by the time
+    // it is committed the call to `$this->setUpClientWithHistoryContainer();`
+    // would be replaced to a call to `$this->getMockRequest()` which loads the
+    // mock response rather than doing a live call.
+    $this->setBaseUri('https://api-campaign-us-4.goacoustic.com/');
   }
 
   /**
@@ -70,6 +80,9 @@ class OmnimailBaseTestClass extends \PHPUnit\Framework\TestCase implements Headl
     $this->cleanupMailingData();
     CRM_Core_DAO::executeQuery('DELETE FROM civicrm_omnimail_job_progress');
     SilverpopGuzzleConnector::getInstance()->logout();
+    foreach ($this->existingSettings as $key => $value) {
+      $this->setSetting($key, $value);
+    }
     parent::tearDown();
   }
 
@@ -86,13 +99,15 @@ class OmnimailBaseTestClass extends \PHPUnit\Framework\TestCase implements Headl
     $responses = [];
     if ($authenticateFirst) {
       $this->authenticate();
+      // Make sure there is a logout at the end.
+      $body[] = file_get_contents(__DIR__ . '/Responses/LogoutResponse.txt');
     }
     foreach ($body as $responseBody) {
       $responses[] = new Response(200, [], $responseBody);
     }
-    $mock = new MockHandler($responses);
-    $handler = HandlerStack::create($mock);
-    return new Client(['handler' => $handler]);
+    $this->mockHandler = new MockHandler($responses);
+    $this->setUpClientWithHistoryContainer();
+    return $this->getGuzzleClient();
   }
 
   /**
@@ -170,7 +185,7 @@ class OmnimailBaseTestClass extends \PHPUnit\Framework\TestCase implements Headl
     return $settings;
   }
 
-  public function createMailingProviderData() {
+  public function createMailingProviderData(): void {
     $this->callAPISuccess('Campaign', 'create', ['name' => 'xyz', 'title' => 'Cool Campaign']);
     $this->callAPISuccess('Mailing', 'create', ['campaign_id' => 'xyz', 'hash' => 'xyz', 'name' => 'Mail Unit Test']);
 
@@ -209,12 +224,18 @@ class OmnimailBaseTestClass extends \PHPUnit\Framework\TestCase implements Headl
 
   /**
    * Cleanup test setup data.
+   *
+   * @throws \Civi\Core\Exception\DBQueryException
    */
-  protected function cleanupMailingData() {
+  protected function cleanupMailingData(): void {
     CRM_Core_DAO::executeQuery("DELETE FROM civicrm_mailing_provider_data WHERE mailing_identifier IN (
       'xyz', 'xyuuuz'
    )");
     CRM_Core_DAO::executeQuery("DELETE FROM civicrm_mailing WHERE name = 'Mail Unit Test'");
+    CRM_Core_DAO::executeQuery("DELETE FROM civicrm_campaign WHERE name = 'xyz'");
+    CRM_Core_DAO::executeQuery('DELETE FROM civicrm_queue_item WHERE queue_name = "omni-snooze"');
+    CRM_Core_DAO::executeQuery('DELETE FROM civicrm_queue WHERE name = "omni-snooze"');
+    \CRM_Queue_Service::singleton(TRUE);
   }
 
   protected function makeScientists() {
@@ -290,6 +311,68 @@ class OmnimailBaseTestClass extends \PHPUnit\Framework\TestCase implements Headl
 
     $this->createMockHandlerForFiles($files);
     $this->setUpClientWithHistoryContainer();
+  }
+
+  /**
+   * Ensure there is a database id setting.
+   *
+   * @param array|int $databaseIDs
+   *
+   * @return array
+   *   Settings prior to change
+   */
+  protected function setDatabaseID($databaseIDs = [50]): array {
+    $credentials = Civi::settings()->get('omnimail_credentials');
+    // This won't actually work if settings is set in civicrm.settings.php but will be used by CI
+    // which now will skip erase if it doesn't have any database_id
+    $this->setSetting('omnimail_credentials', ['Silverpop' => array_merge($credentials['Silverpop'] ?? [], ['database_id' => (array) $databaseIDs])]);
+    return $credentials;
+  }
+
+  /**
+   * This sets the setting for the test, recording the original value to reset.
+   *
+   * Note that this overrides any 'mandatory' setting (ie one recorded in
+   * civicrm.settings.php or, in our case, in fundraising-dev/config/civicrm/settings.d
+   *
+   * @param string $setting
+   * @param array $temporarySettings
+   */
+  protected function setSetting(string $setting, array $temporarySettings): void {
+    $this->existingSettings['omnimail_credentials'] = Civi::settings()->get($setting);
+    Civi::settings()->set($setting, $temporarySettings);
+    // Settings stored in the global are 'mandatory' - ie override the db.
+    global $civicrm_setting;
+    if (isset($civicrm_setting['domain'][$setting])) {
+      $civicrm_setting['domain'][$setting] = $temporarySettings;
+      Civi::service('settings_manager')->flush();
+    }
+  }
+
+  /**
+   * Add our mock client to the rest singleton.
+   *
+   * In other places we have been passing the client in but we can't do that
+   * here so trying a new tactic  - basically setting it up on the singleton
+   * first.
+   */
+  protected function addTestClientToRestSingleton() {
+    $restConnector = SilverpopRestConnector::getInstance();
+    $this->setUpClientWithHistoryContainer();
+    $restConnector->setClient($this->getGuzzleClient());
+  }
+
+  /**
+   * Add our mock client to the rest singleton.
+   *
+   * In other places we have been passing the client in but we can't do that
+   * here so trying a new tactic  - basically setting it up on the singleton
+   * first.
+   */
+  protected function addTestClientToXMLSingleton(): void {
+    /** @var SilverpopXmlConnector $connector */
+    $connector = SilverpopGuzzleXmlConnector::getInstance();
+    $connector->setClient($this->getGuzzleClient());
   }
 
 }

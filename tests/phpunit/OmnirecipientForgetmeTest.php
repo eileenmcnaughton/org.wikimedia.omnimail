@@ -2,7 +2,6 @@
 
 use Civi\Test\EndToEndInterface;
 use Civi\Test\TransactionalInterface;
-use SilverpopConnector\SilverpopRestConnector;
 
 require_once __DIR__ . '/OmnimailBaseTestClass.php';
 
@@ -69,7 +68,7 @@ class OmnirecipientForgetmeTest extends OmnimailBaseTestClass {
    *
    * We should still send a rest request.
    */
-  public function testForgetmeNoRecipientData() {
+  public function testForgetmeNoRecipientData(): void {
     $this->makeScientists();
     $this->setUpForErase();
     $this->addTestClientToRestSingleton();
@@ -82,36 +81,6 @@ class OmnirecipientForgetmeTest extends OmnimailBaseTestClass {
     $requests = $this->getRequestBodies();
     $this->assertEquals("Email,charlie@example.com\n", $requests[1], print_r($requests, 1));
     Civi::settings()->set('omnimail_credentials', $settings);
-  }
-
-  /**
-   * Add our mock client to the rest singleton.
-   *
-   * In other places we have been passing the client in but we can't do that
-   * here so trying a new tactic  - basically setting it up on the singleton
-   * first.
-   */
-  protected function addTestClientToRestSingleton() {
-    $restConnector = SilverpopRestConnector::getInstance();
-    $this->setUpClientWithHistoryContainer();
-    $restConnector->setClient($this->getGuzzleClient());
-  }
-
-  /**
-   * Ensure there is a database id setting.
-   *
-   * @param array $databaseIDs
-   *
-   * @return array
-   *   Settings prior to change
-   */
-  protected function setDatabaseID($databaseIDs = [50]): array {
-    $settings = Civi::settings()->get('omnimail_credentials');
-    // This won't actually work if settings is set in civicrm.settings.php but will be used by CI
-    // which now will skip erase if it doesn't have any database_id
-    Civi::settings()
-      ->set('omnimail_credentials', ['Silverpop' => array_merge(CRM_Utils_Array::value('Silverpop', $settings, []), ['database_id' => $databaseIDs])]);
-    return $settings;
   }
 
 }
