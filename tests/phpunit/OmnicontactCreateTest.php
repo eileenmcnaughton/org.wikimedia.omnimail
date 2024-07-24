@@ -2,11 +2,13 @@
 
 require_once __DIR__ . '/OmnimailBaseTestClass.php';
 
+use Civi\Api4\Activity;
 use Civi\Api4\Contact;
 use Civi\Api4\Email;
 use Civi\Api4\Group;
 use Civi\Api4\Omnicontact;
 use Civi\Api4\Queue;
+use Civi\Test\EntityTrait;
 
 /**
  * Test Omnicontact create method.
@@ -23,22 +25,28 @@ use Civi\Api4\Queue;
  * @group headless
  */
 class OmnicontactCreateTest extends OmnimailBaseTestClass {
+  use EntityTrait;
 
   /**
    * Post test cleanup.
    *
-   * @throws \API_Exception
    * @throws \CRM_Core_Exception
    */
   public function tearDown(): void {
     Group::delete(FALSE)->addWhere('name', '=', 'test_create_group')->execute();
     parent::tearDown();
+    if (!empty($this->ids['Contact'])) {
+      Contact::delete(FALSE)
+        ->addWhere('id', 'IN', $this->ids['Contact'])
+        ->setUseTrash(FALSE)
+        ->execute();
+    }
   }
 
   /**
    * Example: the groupMember load fn works.
    *
-   * @throws \API_Exception
+   * @throws \CRM_Core_Exception
    */
   public function testAddToGroup(): void {
     $this->getMockRequest([file_get_contents(__DIR__ . '/Responses/AddRecipient.txt')]);
@@ -57,33 +65,62 @@ class OmnicontactCreateTest extends OmnimailBaseTestClass {
         'first_name' => 'Lee',
       ])
       ->execute()->first();
-    $this->assertEquals(569624660942, $result['contact_identifier']);
-    $this->assertEquals(trim(file_get_contents(__DIR__ . '/Requests/AddRecipient.txt')), $this->getRequestBodies()[0]);
+    $guzzleSentRequests = $this->getRequestBodies();
 
+    $this->assertEquals(569624660942, $result['contact_identifier']);
+    $this->assertEquals(trim(file_get_contents(__DIR__ . '/Requests/AddRecipient.txt')), $guzzleSentRequests[0]);
   }
 
   /**
    * Example: the groupMember load fn works.
    *
-   * @throws \API_Exception
+   * @throws \CRM_Core_Exception
    */
   public function testSnooze(): void {
     $this->getMockRequest([
       file_get_contents(__DIR__ . '/Responses/AddRecipient.txt'),
       file_get_contents(__DIR__ . '/Responses/UpdateRecipient.txt'),
     ]);
+    $email = 'the_don@example.org';
+
+    $contact = $this->createTestEntity('Contact', [
+      'contact_type' => 'Individual',
+      'first_name' => 'Donald',
+      'last_name' => 'Duck',
+      'email_primary.email' => $email,
+    ]);
+
+    $activity = Activity::create(FALSE)
+      ->addValue('activity_type_id:name', 'EmailSnoozed')
+      ->addValue('status_id:name', 'Scheduled')
+      ->addValue('subject', "Email snooze scheduled")
+      ->addValue('source_contact_id', $contact['id'])
+      ->addValue('source_record_id', $contact['id'])
+      ->addValue('activity_date_time', 'now')
+      ->execute()
+      ->first();
 
     Omnicontact::create(FALSE)
-      ->setEmail('the_don@example.org')
+      ->setEmail($email)
       ->setClient($this->getGuzzleClient())
       ->setDatabaseID(1234)
       ->setValues([
         'last_name' => 'Donald',
         'first_name' => 'Duck',
         'snooze_end_date' => '2023-09-09',
+        'activity_id' => $activity['id'],
       ])
       ->execute()->first();
-    $this->assertEquals(trim(file_get_contents(__DIR__ . '/Requests/SnoozeRecipient.txt')), $this->getRequestBodies()[1]);
+    $guzzleSentRequests = $this->getRequestBodies();
+    $activity = Activity::get(FALSE)
+      ->addWhere('id', '=', $activity['id'])
+      ->addSelect('status_id:name')
+      ->execute()
+      ->last();
+
+    $this->contactIDs[] = $contact['id'];
+    $this->assertEquals('Completed', $activity['status_id:name']);
+    $this->assertEquals(trim(file_get_contents(__DIR__ . '/Requests/SnoozeRecipient.txt')), $guzzleSentRequests[1]);
   }
 
   /**
@@ -105,23 +142,32 @@ class OmnicontactCreateTest extends OmnimailBaseTestClass {
     $this->setDatabaseID(1234);
     $this->addTestClientToXMLSingleton();
 
-    $snoozeDate =  date('Y-m-d', strtotime('+ 1 week'));
-    Contact::create(FALSE)->setValues([
+    $snoozeDate = date('Y-m-d', strtotime('+ 1 week'));
+    $contact = Contact::create(FALSE)->setValues([
       'contact_type' => 'Individual',
       'first_name' => 'Donald',
       'last_name' => 'Duck',
-      'primary_email.email' => 'the_don@example.com',
-      'primary_email.email_settings.snooze_date' => $snoozeDate,
-    ])->execute();
+      'email_primary.email' => 'the_don@example.com',
+      'email_primary.email_settings.snooze_date' => $snoozeDate,
+    ])->execute()->first();
     $queue = Queue::get(FALSE)
       ->addWhere('name', '=', 'omni-snooze')
       ->addWhere('status', '=', 'active')
       ->execute();
+    $this->contactIDs[] = $contact['id'];
     $this->assertCount(1, $queue);
     $this->assertEquals('active', $queue->first()['status']);
     $this->runQueue();
+    $activity = Activity::get(FALSE)
+      ->addSelect('status_id:name')
+      ->addWhere('source_record_id', '=', $contact['id'])
+      ->addWhere('activity_type_id:name', '=', 'EmailSnoozed')
+      ->execute()->last();
+    $this->assertNotNull($activity);
+    $this->assertEquals('Completed', $activity['status_id:name']);
     $requestContent = str_replace(urlencode('RESUME_SEND_DATE>09/09/2023'), 'RESUME_SEND_DATE' . urlencode('>' . date('m/d/Y', strtotime($snoozeDate))), trim(file_get_contents(__DIR__ . '/Requests/SnoozeRecipient.txt')));
-    $this->assertEquals($requestContent, $this->getRequestBodies()[1]);
+    $guzzleSentRequests = $this->getRequestBodies();
+    $this->assertEquals($requestContent, $guzzleSentRequests[1]);
   }
 
   /**
@@ -132,16 +178,18 @@ class OmnicontactCreateTest extends OmnimailBaseTestClass {
    * @throws \CRM_Core_Exception
    */
   public function testQueueEmailEdit(): void {
-    // We don't send calls in this test but get an enotice on CI if there is
+    // Set the busy_threshold really high so our hook does not prevent it running.
+    putenv('busy_threshold=500000');
+    // We don't send calls in this test but get an e-notice on CI if there is
     // no Acoustic configured.
     $this->setDatabaseID(1234);
-    $contactID = Contact::create(FALSE)->setValues([
+    $contactID = $this->createTestEntity('Contact', [
       'contact_type' => 'Individual',
       'first_name' => 'Daisy',
       'last_name' => 'Duck',
-    ])->execute()->first()['id'];
+    ])['id'];
 
-    $snoozeDate =  date('Y-m-d', strtotime('+ 1 week'));
+    $snoozeDate = date('Y-m-d', strtotime('+ 1 week'));
     Email::create(FALSE)->setValues([
       'contact_id' => $contactID,
       'email' => 'daisy@example.com',

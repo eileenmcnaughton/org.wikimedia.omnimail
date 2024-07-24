@@ -1,6 +1,7 @@
 <?php
 
 use CRM_Omnimail_ExtensionUtil as E;
+
 return [
   [
     'name' => 'SavedSearch_snooze',
@@ -25,15 +26,33 @@ return [
             'email_settings.snooze_date',
             'on_hold:label',
             'hold_date',
+            'Email_Contact_contact_id_01.display_name',
+            'is_primary',
           ],
           'orderBy' => [],
-          'where' => [],
+          'where' => [
+            [
+              'Email_Contact_contact_id_01.is_deleted',
+              '=',
+              FALSE,
+            ],
+          ],
           'groupBy' => [],
-          'join' => [],
+          'join' => [
+            [
+              'Contact AS Email_Contact_contact_id_01',
+              'INNER',
+              [
+                'contact_id',
+                '=',
+                'Email_Contact_contact_id_01.id',
+              ],
+            ],
+          ],
           'having' => [],
         ],
         'expires_date' => NULL,
-        'description' => 'Emails with snooze info',
+        'description' => E::ts('Emails with snooze info'),
       ],
       'match' => [
         'name',
@@ -55,7 +74,7 @@ return [
         'settings' => [
           'description' => E::ts('Emails with editable snooze date'),
           'sort' => [],
-          'limit' => 50,
+          'limit' => 10,
           'pager' => [],
           'placeholder' => 5,
           'columns' => [
@@ -70,7 +89,7 @@ return [
               'type' => 'field',
               'key' => 'email_settings.snooze_date',
               'dataType' => 'Date',
-              'label' => E::ts('Email Settings: Snooze date'),
+              'label' => E::ts('Email: Snooze date'),
               'sortable' => TRUE,
               'editable' => TRUE,
             ],
@@ -88,6 +107,13 @@ return [
                 'target' => '_blank',
               ],
               'title' => E::ts('View Contact'),
+            ],
+            [
+              'type' => 'field',
+              'key' => 'on_hold:label',
+              'dataType' => 'Integer',
+              'label' => E::ts('On Hold'),
+              'sortable' => TRUE,
             ],
             [
               'type' => 'field',
@@ -120,6 +146,7 @@ return [
             'table',
             'table-striped',
           ],
+          'button' => 'Search',
         ],
         'acl_bypass' => FALSE,
       ],
