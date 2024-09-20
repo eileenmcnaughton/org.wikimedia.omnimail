@@ -153,7 +153,7 @@ class CRM_Omnimail_Helper {
       'allow_redirects' => FALSE,
     ]);
     if (strpos((string) $response->getBody(), 'loginForm')) {
-      throw new CRM_Core_Exception(('login failed');
+      throw new CRM_Core_Exception('login failed');
     }
     return $client;
   }
