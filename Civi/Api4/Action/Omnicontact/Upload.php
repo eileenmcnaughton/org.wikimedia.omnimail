@@ -4,6 +4,7 @@ namespace Civi\Api4\Action\Omnicontact;
 use Civi\Api4\Generic\AbstractAction;
 use Civi\Api4\Generic\Result;
 use GuzzleHttp\Client;
+use League\Csv\Reader;
 
 /**
  *  Class Check.
@@ -12,12 +13,13 @@ use GuzzleHttp\Client;
  *
  * @method $this setIsAlreadyUploaded(bool $isAlreadyUploaded)
  * @method $this setCsvFile(string $csvFile)
- * @method string getCsvFile()
+ * @method $this setPrefix(string $prefix)
+ * @method $this setSourceFolder(string $sourceFolder)
  * @method $this setMappingFile(string $xmlFile)
- * @method string getMappingFile()
+ * @method $this setDatabaseID(int $databaseID)
  * @method $this setMailProvider(string $mailProvider) Generally Silverpop....
  * @method string getMailProvider()
- * @method $this setClient(Client$client) Generally Silverpop....
+ * @method $this setClient(Client $client) Generally Silverpop....
  * @method null|Client getClient()
  *
  * @package Civi\Api4
@@ -41,8 +43,6 @@ class Upload extends AbstractAction {
    * is used if isAlreadyUploaded is true.
    *
    * @var string
-   *
-   * @required
    */
   protected string $csvFile = '';
 
@@ -53,10 +53,47 @@ class Upload extends AbstractAction {
    * is used if isAlreadyUploaded is true.
    *
    * @var string
-   *
-   * @required
    */
   protected string $mappingFile = '';
+
+  /**
+   * Folder containing CSV files. If not explicitly specifying a single file with $csvFile,
+   * the 'last' file in this folder with a matching $prefix will be selected.
+   *
+   * @var string
+   */
+  protected string $sourceFolder = '';
+
+  /**
+   * Prefix for CSV file names. Ignored when a single file is specified with $csvFile.
+   * See $sourceFolder.
+   *
+   * @var string
+   */
+  protected string $prefix = '';
+
+  /**
+   * Database ID.
+   *
+   * Defaults to the one defined in the CiviCRM setting..
+   *
+   * @var int
+   */
+  protected string $databaseID = '';
+
+  private bool $mappingFileWasGenerated = FALSE;
+
+  /**
+   * Get the remote database ID.
+   *
+   * @return int
+   */
+  public function getDatabaseID(): int {
+    if (!$this->databaseID) {
+      $this->databaseID = (int) (\Civi::settings()->get('omnimail_credentials')[$this->getMailProvider()]['database_id'][0] ?? 0);
+    }
+    return $this->databaseID;
+  }
 
   /**
    * Is the file already uploaded.
@@ -67,6 +104,71 @@ class Upload extends AbstractAction {
    * @var bool
    */
   protected bool $isAlreadyUploaded = FALSE;
+
+  public function getMappingFile() {
+    if (!$this->mappingFile) {
+      $this->createMappingFile();
+    }
+    if (!$this->mappingFileWasGenerated) {
+      $this->throwIfNotInAllowedFolder($this->mappingFile);
+    }
+    return $this->mappingFile;
+  }
+
+  public function getCsvFile(): string {
+    if (!$this->csvFile) {
+      if (!$this->prefix || !$this->sourceFolder) {
+        throw new \CRM_Core_Exception('Must set either csvFile or both prefix and sourceFolder');
+      }
+      $matchedFiles = \CRM_Utils_File::findFiles($this->sourceFolder, $this->prefix . '-*.csv');
+      if (!$matchedFiles) {
+        throw new \CRM_Core_Exception('No files found matching prefix inside sourceFolder');
+      }
+      sort($matchedFiles);
+      $this->csvFile = array_pop($matchedFiles);
+    }
+    $this->throwIfNotInAllowedFolder($this->csvFile);
+    return $this->csvFile;
+  }
+
+  protected function createMappingFile(): void {
+    $reader = Reader::createFromPath($this->getCsvFile());
+    $reader->setHeaderOffset(0);
+    $headers = $reader->getHeader();
+    $temporaryDirectory = sys_get_temp_dir();
+    $this->mappingFile = $temporaryDirectory. '/' . str_replace('.csv', '.xml', basename($this->getCsvFile()));
+    $file = fopen($this->mappingFile, 'wb');
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>
+  <LIST_IMPORT>
+   <LIST_INFO>
+      <ACTION>ADD_AND_UPDATE</ACTION>
+      <LIST_ID>' . $this->getDatabaseID()  . '</LIST_ID>
+      <FILE_TYPE>0</FILE_TYPE>
+      <HASHEADERS>true</HASHEADERS>
+   </LIST_INFO>
+   <SYNC_FIELDS>
+      <SYNC_FIELD>
+         <NAME>EMAIL</NAME>
+      </SYNC_FIELD>
+   </SYNC_FIELDS>
+   <MAPPING>
+      ';
+    foreach ($headers as $index => $header) {
+      $xml .= '
+      <COLUMN>
+         <INDEX>' . ($index + 1) . '</INDEX>
+         <NAME>' . $header . '</NAME>
+         <INCLUDE>true</INCLUDE>
+      </COLUMN>
+      ';
+    }
+
+    $xml .= '
+    </MAPPING>
+</LIST_IMPORT>';
+    fwrite($file, $xml);
+    $this->mappingFileWasGenerated = TRUE;
+  }
 
   /**
    * @inheritDoc
@@ -94,6 +196,18 @@ class Upload extends AbstractAction {
 
   public function fields(): array {
     return [];
+  }
+
+  protected function throwIfNotInAllowedFolder(string $csvFile): void {
+    foreach(\Civi::settings()->get('omnimail_allowed_upload_folders') as $folder) {
+      if (\CRM_Utils_File::isChildPath($folder, $csvFile)) {
+        return;
+      }
+    }
+    throw new \CRM_Core_Exception(
+      "The csv file '$csvFile' is not in one of the allowed folders. " .
+      'Please check omnimail_allowed_upload_folders in CiviCRM settings'
+    );
   }
 
 }

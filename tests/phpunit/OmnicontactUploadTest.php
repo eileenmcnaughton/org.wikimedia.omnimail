@@ -32,14 +32,16 @@ class OmnicontactUploadTest extends OmnimailBaseTestClass {
    *
    * @throws \CRM_Core_Exception
    */
-  public function testOmnigroupUpload(): void {
+  public function testUpload(): void {
+    $baseDir = __DIR__ . '/Requests/ImportFiles/';
+    $this->setSetting('omnimail_allowed_upload_folders', [$baseDir]);
     $client = $this->getMockRequest([file_get_contents(__DIR__ . '/Responses/ImportListResponse.txt')]);
-    $r =   Omnicontact::upload(FALSE)
+    Omnicontact::upload(FALSE)
       ->setClient($client)
       // For the test, do not do the sftp as it is not mocked.
       ->setIsAlreadyUploaded(TRUE)
-      ->setCsvFile(__DIR__ . '/ImportFiles/example.csv')
-      ->setMappingFile(__DIR__ . '/ImportFiles/example.xml')
+      ->setCsvFile($baseDir . 'example.csv')
+      ->setMappingFile($baseDir . 'example.xml')
       // ->setDatabaseID(12345678)
       ->execute()->first();
     $this->assertEquals(trim(file_get_contents(__DIR__ . '/Requests/ImportListRequest.txt')), $this->getRequestBodies()[0]);
