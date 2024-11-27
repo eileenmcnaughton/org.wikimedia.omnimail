@@ -3,6 +3,7 @@ namespace Civi\Api4\Action\Omnicontact;
 
 use Civi\Api4\Generic\AbstractAction;
 use Civi\Api4\Generic\Result;
+use Civi\Api4\OmnimailJobProgress;
 use GuzzleHttp\Client;
 use League\Csv\Reader;
 
@@ -199,7 +200,13 @@ class Upload extends AbstractAction {
         'csv' => basename($this->getCsvFile()),
         'url' => $this->getUrlBase() . $response->getJobId(),
       ]);
-
+    OmnimailJobProgress::create(FALSE)
+      ->setValues([
+        'mailing_provider' => $this->getMailProvider(),
+        'job' => 'data_upload',
+        'job_identifier' => $response->getJobId(),
+      ])
+      ->execute();
     $result[] = ['job_id' => $response->getJobId()];
   }
 
