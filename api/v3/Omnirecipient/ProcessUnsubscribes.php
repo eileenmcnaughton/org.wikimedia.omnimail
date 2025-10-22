@@ -35,7 +35,7 @@ function civicrm_api3_omnirecipient_process_unsubscribes($params) {
     ));
     civicrm_api3('Activity', 'create', array(
       'activity_type_id' => 'Unsubscribe',
-      'campaign_id' => CRM_Utils_Array::value('mailing_identifier.campaign_id.name', $unsubscribes),
+      'campaign_id' => $unsubscribes['mailing_identifier.campaign_id.name'] ?? NULL,
       'target_contact_id' => $unsubscribes['contact_id'],
       'source_contact_id' =>  $unsubscribes['contact_id'],
       'activity_date_time' => $unsubscribes['recipient_action_datetime'],
