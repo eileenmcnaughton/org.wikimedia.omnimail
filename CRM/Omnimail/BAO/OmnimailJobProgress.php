@@ -13,7 +13,7 @@ class CRM_Omnimail_BAO_OmnimailJobProgress extends CRM_Omnimail_DAO_OmnimailJobP
     * $entityName = 'OmnimailJobProgress';
     * $hook = empty($params['id']) ? 'create' : 'edit';
  *
-* CRM_Utils_Hook::pre($hook, $entityName, CRM_Utils_Array::value('id', $params), $params);
+* CRM_Utils_Hook::pre($hook, $entityName, $params['id'] ?? NULL, $params);
     * $instance = new $className();
     * $instance->copyValues($params);
     * $instance->save();

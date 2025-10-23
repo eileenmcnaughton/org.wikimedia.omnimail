@@ -24,9 +24,9 @@ use Omnimail\Silverpop\Responses\Contact;
 function civicrm_api3_omnigroupmember_load($params) {
   $values = array();
 
-  $throttleSeconds = CRM_Utils_Array::value('throttle_seconds', $params);
+  $throttleSeconds = $params['throttle_seconds'] ?? NULL;
   $throttleStagePoint = strtotime('+ ' . (int) $throttleSeconds . ' seconds');
-  $throttleCount = (int) CRM_Utils_Array::value('throttle_number', $params);
+  $throttleCount = (int) ($params['throttle_number'] ?? 0);
   $rowsLeftBeforeThrottle = $throttleCount;
 
   $job = new CRM_Omnimail_Omnigroupmembers($params);
