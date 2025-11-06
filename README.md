@@ -8,6 +8,7 @@ to be generic enough to support the addition of more functionality and providers
 However, over time the likelihood of other providers has dwindled and it
 has added functionality that is only appropriate to Acoustic.
 
+This readme should be used in conjunction with [Wikimedia documentation](https://wikitech.wikimedia.org/wiki/Fundraising/Data_and_Integrated_Processes/Acoustic_Integration)
 ## Table of contents
 - [Supported providers](#supported-providers)
 - [Functionality](#functionality)
