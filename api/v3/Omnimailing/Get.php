@@ -25,19 +25,31 @@ function civicrm_api3_omnimailing_get($params) {
   date_default_timezone_set('UTC');
   CRM_Core_DAO::executeQuery("SET TIME_ZONE='+00:00'");
 
-  /* @var \Omnimail\Silverpop\Mailer $mailer */
-  $mailer = Omnimail::create($params['mail_provider'], CRM_Omnimail_Helper::getCredentials($params));
+    /* @var \Omnimail\Silverpop\Mailer $mailer */
+    $mailer = Omnimail::create($params['mail_provider'], CRM_Omnimail_Helper::getCredentials($params));
   $mailerParameters = [
     'StartTimeStamp' => strtotime($params['start_date']),
     'EndTimeStamp' => strtotime($params['end_date']),
+    'timeout' => $params['timeout'],
   ];
-
-  $mailings = (array) $mailer->getMailings($mailerParameters)->getResponse();
+  try {
+    $mailings = (array) $mailer->getMailings($mailerParameters)->getResponse();
+  }
+  catch (Exception $e) {
+    \Civi::log('wmf')->error(get_class($e) . '
+      : start time {StartTimeStamp} end time {EndTimeStamp} timeout {timeout}' . $e->getMessage(), [
+      $mailerParameters
+    ]);
+    throw $e;
+  }
   $results = [];
   foreach ($mailings as $mailing) {
     /* @var \Omnimail\Silverpop\Responses\Mailing $mailing */
     try {
       $result = mapMailing($mailing) + ['is_multiple_report' => FALSE];
+      if (!$params['is_include_text']) {
+        unset($result['body_text'], $result['body_html']);
+      }
       $results[] = $result;
     }
     catch (Exception $e) {
@@ -56,6 +68,9 @@ function civicrm_api3_omnimailing_get($params) {
     /* @var \Omnimail\Silverpop\Responses\Mailing $mailing */
     try {
       $result = mapMailing($mailing) + ['is_multiple_report' => TRUE];
+      if (!$params['is_include_text']) {
+        unset($result['body_text'], $result['body_html']);
+      }
       $results[] = $result;
     }
     catch (Exception $e) {
@@ -96,6 +111,7 @@ function mapMailing(\Omnimail\Silverpop\Responses\Mailing $mailing): array {
       'name' => substr($mailing->getName(), 0, 128),
       'body_html' => $mailing->getHtmlBody(),
       'body_text' => $mailing->getTextBody(),
+      'tags' => $mailing->getTags(),
     ];
   }
   $result = \Civi::$statics[$mailingKey] + [
@@ -150,6 +166,16 @@ function _civicrm_api3_omnimailing_get_spec(&$params) {
     'title' => ts('Date to fetch to'),
     'type' => CRM_Utils_Type::T_TIMESTAMP,
     'api.default' => 'now',
+  ];
+  $params['is_include_text'] = [
+    'title' => ts('Include mailing text and html, set to FALSE for concise data'),
+    'type' => CRM_Utils_Type::T_BOOLEAN,
+    'api.default' => TRUE,
+  ];
+  $params['timeout'] = [
+    'title' => ts('Http request time out'),
+    'type' => CRM_Utils_Type::T_INT,
+    'api.default' => 20,
   ];
 
 }

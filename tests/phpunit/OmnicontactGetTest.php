@@ -26,7 +26,10 @@ class OmnicontactGetTest extends OmnimailBaseTestClass {
    * @throws \CRM_Core_Exception
    */
   public function testGetRecipient(): void {
-    $this->getMockRequest([file_get_contents(__DIR__ . '/Responses/SelectRecipientData.txt')]);
+    $this->getMockRequest([
+      file_get_contents(__DIR__ . '/Responses/SelectRecipientData.txt'),
+      file_get_contents(__DIR__ . '/Responses/ConsentInformationResponse.txt'),
+    ]);
 
     $result = Omnicontact::get(FALSE)
       ->setClient($this->getGuzzleClient())
@@ -42,6 +45,24 @@ class OmnicontactGetTest extends OmnimailBaseTestClass {
     $this->assertEquals('2022-03-03 02:50:00', $result['last_modified_date']);
     $this->assertEquals(123456, $result['contact_identifier']);
     $this->assertEquals('https://cloud.goacoustic.com/campaign-automation/Data/Databases?cuiOverrideSrc=https%253A%252F%252Fcampaign-us-4.goacoustic.com%252FsearchRecipient.do%253FisShellUser%253D1%2526action%253Dedit%2526listId%253D9644238%2526recipientId%253D123456&listId=345',$result['url'] );
+  }
+
+  /**
+   * Test our snooze audit function.
+   *
+   * @return void
+   * @throws \CRM_Core_Exception
+   */
+  public function testVerifySnooze(): void {
+    $this->createSnoozyDuck(date('Y-m-d H:i:s', strtotime('+ 1 week')));
+    $lazyBones = Omnicontact::verifySnooze(FALSE)
+      ->setClient($this->getMockRequest([
+        file_get_contents(__DIR__ . '/Responses/SelectRecipientData.txt'),
+        file_get_contents(__DIR__ . '/Responses/ConsentInformationResponse.txt'),
+      ]))
+
+      ->execute()->indexBy('email');
+    $this->assertNotEmpty($lazyBones['the_don@example.com']);
   }
 
 }

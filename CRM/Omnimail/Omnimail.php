@@ -1,15 +1,11 @@
 <?php
 
-use Omnimail\Silverpop\Responses\RecipientsResponse;
-use Omnimail\Omnimail;
-
 /**
  * Created by IntelliJ IDEA.
  * User: emcnaughton
  * Date: 5/16/17
  * Time: 5:53 PM
  */
-
 class CRM_Omnimail_Omnimail {
 
   /**
@@ -19,7 +15,7 @@ class CRM_Omnimail_Omnimail {
    *
    * @var string
    */
-  protected $job;
+  protected string $job = '';
 
   /**
    * @var string
@@ -34,17 +30,31 @@ class CRM_Omnimail_Omnimail {
   /**
    * @var int
    */
-  protected $offset;
+  protected int $offset = 0;
+
+  /**
+   * @var int
+   */
+  protected int $limit = 0;
+
+  /**
+   * @var int
+   */
+  protected int $skippedRows = 0;
+
+  public function getSkippedRows(): int {
+    return $this->skippedRows;
+  }
 
   /**
    * @var array
    */
-  protected $jobSettings = array();
+  protected array $jobSettings = [];
 
   /**
    * @var array
    */
-  protected $settings = array();
+  protected array $settings = [];
 
   /**
    * @var array
@@ -75,7 +85,7 @@ class CRM_Omnimail_Omnimail {
     $this->settings = CRM_Omnimail_Helper::getSettings();
     $this->setJobSettings($params);
     $this->setOffset($params);
-    $this->setRetrievalParameters(CRM_Utils_Array::value('retrieval_parameters', $this->jobSettings));
+    $this->setRetrievalParameters($this->jobSettings['retrieval_parameters'] ?? NULL);
 
     if ($this->getRetrievalParameters()) {
       if (!empty($params['end_date']) || !empty($params['start_date'])) {
@@ -157,7 +167,7 @@ class CRM_Omnimail_Omnimail {
   /**
    * @return int
    */
-  public function getOffset() {
+  public function getOffset(): int {
     return $this->offset;
   }
 
@@ -167,13 +177,14 @@ class CRM_Omnimail_Omnimail {
    * This is the row in the csv file to start from in csv jobs.
    *
    * @param array $params
-   *
-   * @return mixed
    */
-  protected function setOffset($params) {
-    $this->offset = CRM_Utils_Array::value('offset', $this->jobSettings, 0);
+  protected function setOffset(array $params): void {
+    $this->offset = (int) ($this->jobSettings['offset'] ?? 0);
+    if (isset($params['offset'])) {
+      $this->offset = (int) $params['offset'];
+    }
     if (isset($params['options']['offset'])) {
-      $this->offset = $params['options']['offset'];
+      $this->offset = (int) $params['options']['offset'];
     }
   }
 
@@ -185,12 +196,12 @@ class CRM_Omnimail_Omnimail {
    *
    * @throws \CRM_Core_Exception
    */
-  protected function setJobSettings($params) {
-    $this->jobSettings = array(
+  protected function setJobSettings(array $params): void {
+    $this->jobSettings = [
       'mailing_provider' => $params['mail_provider'],
       'job' => 'omnimail_' . $this->job . '_load',
-      'job_identifier' => $this->job_identifier ? : NULL,
-    );
+      'job_identifier' => $this->job_identifier ?: NULL,
+    ];
     $savedSettings = civicrm_api3('OmnimailJobProgress', 'get', $this->jobSettings);
 
     if ($savedSettings['count']) {

@@ -22,7 +22,6 @@ require_once __DIR__ . '/OmnimailBaseTestClass.php';
 class OmnirecipientForgetmeTest extends OmnimailBaseTestClass {
 
   public function tearDown(): void {
-    CRM_Core_DAO::executeQuery('DELETE FROM civicrm_mailing_provider_data WHERE contact_id IN (' . implode(',', $this->contactIDs) . ')');
     CRM_Core_DAO::executeQuery('DELETE FROM civicrm_omnimail_job_progress WHERE job_identifier = \'["charlie@example.com"]\'');
     parent::tearDown();
   }
@@ -30,19 +29,19 @@ class OmnirecipientForgetmeTest extends OmnimailBaseTestClass {
   /**
    * Test forgetme function.
    */
-  public function testForgetme() {
+  public function testForgetme(): void {
     $this->makeScientists();
     $this->createMailingProviderData();
     $this->setUpForErase();
     $this->addTestClientToRestSingleton();
 
-    $this->assertEquals(1, $this->callAPISuccessGetCount('MailingProviderData', ['contact_id' => $this->contactIDs['charlie_clone']]));
+    $this->assertEquals(1, $this->callAPISuccessGetCount('MailingProviderData', ['contact_id' => $this->ids['Contact']['charlie_clone']]));
 
     $settings = $this->setDatabaseID([50]);
-    $this->callAPISuccess('Contact', 'forgetme', ['id' => $this->contactIDs['charlie_clone']]);
-    $this->callAPISuccess('Omnirecipient', 'process_forgetme', ['mail_provider' => 'Silverpop']);
+    $this->callAPISuccess('Contact', 'forgetme', ['id' => $this->ids['Contact']['charlie_clone']]);
+    $this->callAPISuccess('Omnirecipient', 'process_forgetme', ['mail_provider' => 'Silverpop', 'retry_delay' => 0]);
 
-    $this->assertEquals(0, $this->callAPISuccessGetCount('MailingProviderData', ['contact_id' => $this->contactIDs['charlie_clone']]));
+    $this->assertEquals(0, $this->callAPISuccessGetCount('MailingProviderData', ['contact_id' => $this->ids['Contact']['charlie_clone']]));
 
     // Check the job has retrieval parameters to try again later.
     $omniJobParams = ['job' => 'omnimail_privacy_erase', 'job_identifier' => '["charlie@example.com"]', 'mailing_provider' => 'Silverpop'];
@@ -52,7 +51,7 @@ class OmnirecipientForgetmeTest extends OmnimailBaseTestClass {
     $this->setUpForEraseFollowUpSuccess();
     $this->addTestClientToRestSingleton();
     // This time it was complete - entry should be gone.
-    $this->callAPISuccess('Omnirecipient', 'process_forgetme', ['mail_provider' => 'Silverpop']);
+    $this->callAPISuccess('Omnirecipient', 'process_forgetme', ['mail_provider' => 'Silverpop', 'retry_delay' => 0]);
     $this->callAPISuccessGetCount('OmnimailJobProgress', $omniJobParams, 0);
 
     // Check the request retried our url
@@ -74,12 +73,12 @@ class OmnirecipientForgetmeTest extends OmnimailBaseTestClass {
     $this->addTestClientToRestSingleton();
     $settings = $this->setDatabaseID([50]);
 
-    $this->callAPISuccess('Contact', 'forgetme', ['id' => $this->contactIDs['charlie_clone']]);
-    $this->callAPISuccess('Omnirecipient', 'process_forgetme', ['mail_provider' => 'Silverpop']);
+    $this->callAPISuccess('Contact', 'forgetme', ['id' => $this->ids['Contact']['charlie_clone']]);
+    $this->callAPISuccess('Omnirecipient', 'process_forgetme', ['mail_provider' => 'Silverpop', 'retry_delay' => 0]);
 
     // Check the request we sent out had the right email in it.
     $requests = $this->getRequestBodies();
-    $this->assertEquals("Email,charlie@example.com\n", $requests[1], print_r($requests, 1));
+    $this->assertEquals("Email,charlie@example.com\n", $requests[0], print_r($requests, 1));
     Civi::settings()->set('omnimail_credentials', $settings);
   }
 

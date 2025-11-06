@@ -14,6 +14,8 @@
  * @return array
  */
 function civicrm_api3_omnigroupmember_get($params) {
+  $options = _civicrm_api3_get_options_from_params($params);
+  $params['limit'] = $options['limit'];
   $job = new CRM_Omnimail_Omnigroupmembers($params);
   $result = $job->getResult($params);
   $values = $job->formatResult($params, $result);
@@ -36,6 +38,10 @@ function _civicrm_api3_omnigroupmember_get_spec(&$params) {
     'title' => ts('Name of Mailer'),
     'api.required' => TRUE,
   );
+  $params['timeout'] = [
+    'title' => ts('Timeout'),
+    'api.default' => 10.0,
+  ];
   $params['start_date'] = array(
     'title' => ts('Date to fetch from'),
     'api.default' => '3 days ago',

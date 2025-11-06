@@ -1,5 +1,8 @@
 <?php
 
+use Civi\Api4\GroupContact;
+use Civi\Api4\Omnigroupmember;
+use Civi\Api4\PhoneConsent;
 use GuzzleHttp\Client;
 
 require_once __DIR__ . '/OmnimailBaseTestClass.php';
@@ -24,6 +27,9 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
     $this->cleanupGroup(NULL, 'Omnimailers');
     $this->cleanupGroup(NULL, 'Omnimailers2');
     $this->cleanupGroup(NULL, 'Omnimailers3');
+    $this->cleanupGroup(NULL, 'MSL');
+    PhoneConsent::delete(FALSE)
+      ->addWhere('master_recipient_id', 'LIKE', '12345%')->execute();
     parent::tearDown();
   }
 
@@ -34,7 +40,7 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
    */
   public function testOmnigroupmemberLoad(): void {
     $client = $this->setupSuccessfulDownloadClient();
-    $group = $this->callAPISuccess('Group', 'create', ['name' => 'Omnimailers', 'title' => 'Omni']);
+    $group = $this->createTestEntity('Group', ['name' => 'Omnimailers', 'title' => 'Omni']);
 
     $this->callAPISuccess('Omnigroupmember', 'load', [
       'mail_provider' => 'Silverpop',
@@ -56,6 +62,91 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
 
     $this->assertEquals('Silverpop clever place 07/04/17', $contacts['values'][2]['source']);
     $this->cleanupGroup($group);
+  }
+
+  public function testLoadSuppressionList(): void {
+    $this->createTestEntity('Contact', [
+      'first_name' => 'Bob',
+      'last_name' => 'Mouse',
+      'email_primary.email' => 'bob@example.org',
+    ], 'mouse');
+    $client = $this->setupSuccessfulDownloadClient('omnimail_omnigroupmembers_load', TRUE, 'msl-import-list.csv');
+    $group = $this->createTestEntity('Group', ['name' => 'MSL', 'title' => 'MSL']);
+
+    Omnigroupmember::load(FALSE)
+      ->setGroupIdentifier(12345)
+      ->setGroupID($group['id'])
+      ->setIsSuppressionList(TRUE)
+      ->setClient($client)
+      ->setLimit(5)
+      ->execute();
+    $groupContact = GroupContact::get(FALSE)
+      ->addWhere('group_id', '=', $group['id'])
+      ->addWhere('contact_id', '=', $this->ids['Contact']['mouse'])
+      ->execute()->single();
+    $this->assertEquals('Added', $groupContact['status']);
+
+    $client = $this->setupSuccessfulDownloadClient('omnimail_omnigroupmembers_load', TRUE, 'msl-import-list.csv');
+    Omnigroupmember::load(FALSE)
+      ->setGroupIdentifier(12345)
+      ->setGroupID($group['id'])
+      ->setIsSuppressionList(TRUE)
+      ->setClient($client)
+      ->setLimit(5)
+      ->execute();
+
+    $groupContact = GroupContact::get(FALSE)
+      ->addWhere('group_id', '=', $group['id'])
+      ->addWhere('contact_id', '=', $this->ids['Contact']['mouse'])
+      ->execute()->single();
+    $this->assertEquals('Added', $groupContact['status']);
+  }
+
+  /**
+   * @throws \CRM_Core_Exception
+   */
+  public function testPhoneConsentListLoad(): void {
+    $this->createTestEntity('Contact', [
+      'first_name' => 'Bob',
+      'last_name' => 'Mouse',
+      'email_primary.email' => 'bob@example.org',
+    ], 'mouse');
+    $client = $this->setupSuccessfulDownloadClient('omnimail_omnigroupmembers_load', TRUE, 'phone-consent-list.csv');
+    $this->addMockResponse(file_get_contents(__DIR__ . '/Responses/SelectRecipientData.txt'));
+    $consentResponse = file_get_contents(__DIR__ . '/Responses/ConsentInformationResponse.txt');
+    $this->addMockResponse($consentResponse);
+    $this->addMockResponse(file_get_contents(__DIR__ . '/Responses/SelectRecipientData.txt'));
+    $this->addMockResponse(str_replace('OPTED-IN', 'OPTED-OUT', $consentResponse));
+
+    PhoneConsent::create(FALSE)
+      ->setValues([
+        'country_code' => 1,
+        'master_recipient_id' => 123457,
+        'phone_number' => 23456788,
+        'consent_date' => '2023-01-01',
+        'consent_source' => 'somehow',
+        'opted_in' => TRUE,
+      ])->execute();
+    Omnigroupmember::load(FALSE)
+      ->setGroupIdentifier(12345)
+      ->setClient($client)
+      ->setLimit(5)
+      ->setIsConsentOptOutGroup(TRUE)
+      ->execute();
+    $consent = PhoneConsent::get(FALSE)
+      ->addWhere('phone_number', '=', 23456789)
+      ->execute()->single();
+    $this->assertEquals(1, $consent['country_code']);
+    $this->assertEquals(123456, $consent['master_recipient_id']);
+    $this->assertEquals(23456789, $consent['phone_number']);
+    $this->assertEquals('2024-11-27 00:08:59', $consent['consent_date']);
+    $this->assertEquals('Sms Consent Kafka Streams', $consent['consent_source']);
+    $this->assertTrue($consent['opted_in']);
+
+    $consent = PhoneConsent::get(FALSE)
+      ->addWhere('phone_number', '=', 23456788)
+      ->execute()->single();
+    $this->assertFalse($consent['opted_in']);
   }
 
   /**
@@ -91,7 +182,6 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
    */
   public function testOmnigroupmemberLoadUseOffsetSetting(): void {
     $client = $this->setupSuccessfulDownloadClient();
-    $this->callAPISuccess('setting', 'create', ['omnimail_job_retry_interval' => 0.01]);
     $group = $this->callAPISuccess('Group', 'create', ['name' => 'Omnimailers', 'title' => 'Omni']);
 
     $this->callAPISuccess('Omnigroupmember', 'load', [
@@ -102,6 +192,7 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
       'client' => $client,
       'group_identifier' => 123,
       'group_id' => $group['id'],
+      'job_identifier' => 'load',
     ]);
     $groupMembers = $this->callAPISuccess('GroupContact', 'get', ['group_id' => $group['id']]);
     $this->assertEquals(1, $groupMembers['count']);
@@ -109,7 +200,7 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
     $this->assertEquals('eric@example.com', $contacts['values'][0]['email_primary.email']);
 
     // Re-run. Offset is now 1 in settings & we are passing in limit =1. Sarah should be created.
-    $client = $this->setupSuccessfulDownloadClient(FALSE);
+    $client = $this->setupSuccessfulDownloadClient('omnimail_omnigroupmembers_load', FALSE);
     $this->callAPISuccess('Omnigroupmember', 'load', [
       'mail_provider' => 'Silverpop',
       'username' => 'Shrek',
@@ -118,6 +209,7 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
       'client' => $client,
       'group_identifier' => 123,
       'group_id' => $group['id'],
+      'job_identifier' => 'load',
     ]);
     $groupMembers = $this->callAPISuccess('GroupContact', 'get', ['group_id' => $group['id']]);
     $this->assertEquals(2, $groupMembers['count']);
@@ -133,20 +225,20 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
         'filePath' => '/download/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv',
       ],
       'progress_end_timestamp' => '2017-03-02 23:00:00',
-    ], $this->getUtcDateFormattedJobSettings());
+    ], $this->getUtcDateFormattedJobSettings(['job_identifier' => 'load']));
 
   }
 
   /**
    * Test when download does not complete in time.
    *
-   * @throws \CRM_Core_Exception
    */
   public function testOmnigroupmemberLoadIncomplete(): void {
     $this->createSetting([
       'job' => 'omnimail_omnigroupmembers_load',
       'mailing_provider' => 'Silverpop',
       'last_timestamp' => '1487890800',
+      'job_identifier' => 'load_test',
     ]);
 
     $this->callAPISuccess('Setting', 'create',  ['omnimail_job_default_time_interval' => '7 days']);
@@ -156,7 +248,6 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
     for ($i = 0; $i < 15; $i++) {
       $responses[] = file_get_contents(__DIR__ . '/Responses/JobStatusWaitingResponse.txt');
     }
-    $this->callAPISuccess('setting', 'create', ['omnimail_job_retry_interval' => 0.01]);
     $group = $this->callAPISuccess('Group', 'create', ['name' => 'Omnimailers2', 'title' => 'Omni2']);
 
     $this->callAPISuccess('Omnigroupmember', 'load', [
@@ -166,6 +257,7 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
       'client' => $this->getMockRequest($responses),
       'group_identifier' => 123,
       'group_id' => $group['id'],
+      'job_identifier' => 'load_test',
     ]);
 
     $groupMembers = $this->callAPISuccess('GroupContact', 'get', ['group_id' => $group['id']]);
@@ -179,7 +271,7 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
       ],
       'progress_end_timestamp' => '2017-03-02 23:00:00',
       'offset' => 0,
-    ], $this->getUtcDateFormattedJobSettings());
+    ], $this->getUtcDateFormattedJobSettings(['job_identifier' => 'load_test']));
   }
 
   /**
@@ -200,8 +292,7 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
     for ($i = 0; $i < 15; $i++) {
       $responses[] = file_get_contents(__DIR__ . '/Responses/JobStatusWaitingResponse.txt');
     }
-    $responses[] = file_get_contents(__DIR__ . '/Responses/LogoutResponse.txt');
-    $this->callAPISuccess('setting', 'create', ['omnimail_job_retry_interval' => 0.01]);
+
     $group = $this->callAPISuccess('Group', 'create', ['name' => 'Omnimailers2', 'title' => 'Omni2']);
 
     $this->callAPISuccess('Omnigroupmember', 'load', [
@@ -236,12 +327,13 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
    * @throws \CRM_Core_Exception
    */
   public function testCompleteIncomplete(): void {
-    $client = $this->setupSuccessfulDownloadClient(FALSE);
+    $client = $this->setupSuccessfulDownloadClient('omnimail_omnigroupmembers_load', FALSE);
     $group = $this->callAPISuccess('Group', 'create', ['name' => 'Omnimailers3', 'title' => 'Omni3']);
     $this->createSetting([
       'job' => 'omnimail_omnigroupmembers_load',
       'mailing_provider' => 'Silverpop',
       'last_timestamp' => '1487890800',
+      'job_identifier' => 'incomplete_load',
       'retrieval_parameters' => [
         'jobId' => '101719657',
         'filePath' => '/download/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv',
@@ -258,6 +350,7 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
       'client' => $client,
       'group_identifier' => 123,
       'group_id' => $group['id'],
+      'job_identifier' => 'incomplete_load',
     ]);
 
     $groupMembers = $this->callAPISuccess('GroupContact', 'get', ['group_id' => $group['id']]);
@@ -265,27 +358,34 @@ class OmnigroupmemberLoadTest extends OmnimailBaseTestClass {
 
     $this->assertEquals([
       'last_timestamp' => '2017-02-26 23:00:00',
-    ], $this->getUtcDateFormattedJobSettings(['mail_provider' => 'Silverpop']));
+    ], $this->getUtcDateFormattedJobSettings(['job_identifier' => 'incomplete_load']));
     $this->cleanupGroup($group);
   }
 
   /**
    * Set up the mock client to emulate a successful download.
    *
+   * @param string $job
    * @param bool $isUpdateSetting
+   * @param string $fileName
    *
    * @return \GuzzleHttp\Client
    */
-  protected function setupSuccessfulDownloadClient($isUpdateSetting = TRUE): Client {
+  protected function setupSuccessfulDownloadClient(string $job = 'omnimail_omnigroupmembers_load', bool $isUpdateSetting = TRUE, string $fileName = '20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv'): Client {
     $responses = [
       file_get_contents(__DIR__ . '/Responses/ExportListResponse.txt'),
       file_get_contents(__DIR__ . '/Responses/JobStatusCompleteResponse.txt'),
-      file_get_contents(__DIR__ . '/Responses/LogoutResponse.txt'),
     ];
-    copy(__DIR__ . '/Responses/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv', sys_get_temp_dir() . '/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv');
-    fopen(sys_get_temp_dir() . '/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv.complete', 'c');
+    // Note that the copy-to is the same for all tests - because otherwise we would need
+    // the file name altered in the responses (above) too - the file name is data from Acoustic.
+    copy(__DIR__ . '/Responses/' . $fileName, sys_get_temp_dir() . '/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv');
+    fopen(sys_get_temp_dir() . '/' . $fileName . '.complete', 'c');
     if ($isUpdateSetting) {
-      $this->createSetting(['job' => 'omnimail_omnigroupmembers_load', 'mailing_provider' => 'Silverpop', 'last_timestamp' => '1487890800']);
+      $this->createSetting(['job' => $job, 'job_identifier' => 'load', 'mailing_provider' => 'Silverpop', 'last_timestamp' => '1487890800']);
+    }
+    else {
+      // In this case we are starting as it it has already started and do not need the first one ...
+      unset($responses[0]);
     }
 
     return $this->getMockRequest($responses);

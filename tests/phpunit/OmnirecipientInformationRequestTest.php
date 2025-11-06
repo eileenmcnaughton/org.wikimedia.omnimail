@@ -1,12 +1,5 @@
 <?php
 
-use Civi\Test\EndToEndInterface;
-use Civi\Test\HookInterface;
-use Civi\Test\TransactionalInterface;
-use GuzzleHttp\Client;
-use GuzzleHttp\Handler\MockHandler;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Psr7\Response;
 require_once __DIR__ . '/OmnimailBaseTestClass.php';
 
 /**
@@ -28,13 +21,11 @@ class OmnirecipientInformationRequestTest extends OmnimailBaseTestClass {
   /**
    * Example: Test that a version is returned.
    */
-  public function testOmnirecipientInformationRequest() {
+  public function testOmnirecipientInformationRequest(): void {
     $this->createMockHandlerForFiles([
-      '/Responses/AuthenticateRestResponse.txt',
       '/Responses/Privacy/PrivacyRequest1.txt',
       '/Responses/Privacy/PrivacyRequest2.txt',
       '/Responses/Privacy/PrivacyRequest3.txt',
-      '/Responses/LogoutResponse.txt',
     ]);
     $this->setUpClientWithHistoryContainer();
     $result = $this->callAPISuccess('Omnirecipient', 'informationrequest', [
@@ -48,8 +39,7 @@ class OmnirecipientInformationRequestTest extends OmnimailBaseTestClass {
 
     $this->assertEquals(1417692990, $result->getOptInTimestamp());
     $requests = $this->getRequestBodies();
-    $this->assertEquals($requests[0], trim(file_get_contents(__DIR__ . '/Requests/AuthenticateRest.txt')));
-    $this->assertEquals($requests[1], file_get_contents(__DIR__ . '/Requests/privacy_csv.txt'));
+    $this->assertEquals($requests[0], file_get_contents(__DIR__ . '/Requests/privacy_csv.txt'));
   }
 
 }

@@ -2,18 +2,17 @@
 
 require_once __DIR__ . '/GuzzleTestTrait.php';
 
+use Civi\Api4\Contact;
+use Civi\Api4\Phone;
+use Civi\Api4\PhoneConsent;
 use Civi\Test\Api3TestTrait;
-use Civi\Test\HeadlessInterface;
-use Civi\Test\HookInterface;
-use Civi\Test\TransactionalInterface;
+use Civi\Test\EntityTrait;
 use GuzzleHttp\Client;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Psr7\Response;
 use Omnimail\Omnimail;
-use Omnimail\Silverpop\Connector\SilverpopGuzzleXmlConnector;
 use Omnimail\Silverpop\Credentials;
-use Omnimail\Silverpop\Connector\SilverpopGuzzleConnector;
 use PHPUnit\Framework\TestCase;
 use SilverpopConnector\SilverpopRestConnector;
 use SilverpopConnector\SilverpopXmlConnector;
@@ -35,6 +34,7 @@ use SilverpopConnector\SilverpopXmlConnector;
 class OmnimailBaseTestClass extends TestCase {
   use Api3TestTrait;
   use GuzzleTestTrait;
+  use EntityTrait;
 
   protected $existingSettings = [];
 
@@ -55,6 +55,8 @@ class OmnimailBaseTestClass extends TestCase {
   /**
    * IDs of contacts created for the test.
    *
+   * @deprecated set $this->ids['Contact'] to align with the EntityTrait.
+   *
    * @var array
    */
   protected $contactIDs = [];
@@ -68,6 +70,8 @@ class OmnimailBaseTestClass extends TestCase {
     // would be replaced to a call to `$this->getMockRequest()` which loads the
     // mock response rather than doing a live call.
     $this->setBaseUri('https://api-campaign-us-4.goacoustic.com/');
+    $this->setSetting('omnimail_job_retry_interval', 0);
+    $this->setDatabaseID(1234);
   }
 
   /**
@@ -75,11 +79,34 @@ class OmnimailBaseTestClass extends TestCase {
    */
   public function tearDown(): void {
     foreach ($this->contactIDs as $contactID) {
-      $this->callAPISuccess('Contact', 'delete', ['id' => $contactID, 'skip_undelete' => 1]);
+      // $this->contactIDs is the old format.
+      $this->ids['Contact'][] = $contactID;
     }
+    if (!empty($this->ids['Contact'])) {
+      Contact::delete(FALSE)
+        ->addWhere('id', 'IN', $this->ids['Contact'])
+        ->setUseTrash(FALSE)
+        ->execute();
+      CRM_Core_DAO::executeQuery('DELETE FROM civicrm_mailing_provider_data WHERE contact_id IN (' . implode(',', $this->ids['Contact']) . ')');
+    }
+    if (!empty($this->ids['PhoneConsent'])) {
+      PhoneConsent::delete(FALSE)
+        ->addWhere('id', 'IN', $this->ids['PhoneConsent'])->execute();
+    }
+    $phones = (array) Phone::get(FALSE)
+      ->addWhere('phone_data.recipient_id', '=', 12345)
+      ->execute()
+      ->indexBy('contact_id');
+    if (count($phones) > 0) {
+      Contact::delete(FALSE)
+        ->addWhere('id', 'IN', array_keys($phones))
+        ->setUseTrash(FALSE)
+        ->execute();
+    }
+
     $this->cleanupMailingData();
     CRM_Core_DAO::executeQuery('DELETE FROM civicrm_omnimail_job_progress');
-    SilverpopGuzzleConnector::getInstance()->logout();
+    SilverpopXmlConnector::getInstance()->logout();
     foreach ($this->existingSettings as $key => $value) {
       $this->setSetting($key, $value);
     }
@@ -89,18 +116,16 @@ class OmnimailBaseTestClass extends TestCase {
   /**
    * Get mock guzzle client object.
    *
-   * @param $body
+   * @param array $body
    * @param bool $authenticateFirst
    *
    * @return \GuzzleHttp\Client
    */
-  public function getMockRequest($body = [], $authenticateFirst = TRUE): Client {
+  public function getMockRequest(array $body = [], bool $authenticateFirst = TRUE): Client {
 
     $responses = [];
     if ($authenticateFirst) {
       $this->authenticate();
-      // Make sure there is a logout at the end.
-      $body[] = file_get_contents(__DIR__ . '/Responses/LogoutResponse.txt');
     }
     foreach ($body as $responseBody) {
       $responses[] = new Response(200, [], $responseBody);
@@ -117,7 +142,7 @@ class OmnimailBaseTestClass extends TestCase {
    * try anyway. That way when the actual command runs we know it is done and the number of responses
    * used won't depend on whether a previous test authenticated earlier.
    */
-  protected function authenticate() {
+  protected function authenticate(): void {
     $responses[] = new Response(200, [], file_get_contents(__DIR__ . '/Responses/AuthenticateResponse.txt'));
     $mock = new MockHandler($responses);
     $handler = HandlerStack::create($mock);
@@ -125,6 +150,7 @@ class OmnimailBaseTestClass extends TestCase {
     Omnimail::create('Silverpop', [
       'client' => $client,
       'credentials' => new Credentials(['username' => 'Shrek', 'password' => 'Fiona']),
+      'timeout' => 0.1,
     ])->getMailings();
   }
 
@@ -135,16 +161,45 @@ class OmnimailBaseTestClass extends TestCase {
    *
    * @return \GuzzleHttp\Client
    */
-  protected function setupSuccessfulDownloadClient($job = 'omnimail_omnigroupmembers_load'): Client {
+  protected function setupSuccessfulDownloadClient(string $job = 'omnimail_omnigroupmembers_load', bool $isUpdateSetting = TRUE, string $fileName = 'Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv') : Client {
     $responses = [
       file_get_contents(__DIR__ . '/Responses/RawRecipientDataExportResponse.txt'),
       file_get_contents(__DIR__ . '/Responses/JobStatusCompleteResponse.txt'),
-      file_get_contents(__DIR__ . '/Responses/LogoutResponse.txt'),
     ];
     //Raw Recipient Data Export Jul 02 2017 21-46-49 PM 758.zip
-    copy(__DIR__ . '/Responses/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv', sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv');
+    copy(__DIR__ . '/Responses/' . $fileName, sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv');
     fopen(sys_get_temp_dir() . '/Raw Recipient Data Export Jul 03 2017 00-47-42 AM 1295.csv.complete', 'c');
-    $this->createSetting(['job' => $job, 'mailing_provider' => 'Silverpop', 'last_timestamp' => '1487890800']);
+    if ($isUpdateSetting) {
+      $this->createSetting(['job' => $job, 'mailing_provider' => 'Silverpop', 'last_timestamp' => '1487890800']);
+    }
+    else {
+      // In this case we are starting as it it has already started and do not need the first one ...
+      unset($responses[0]);
+    }
+    return $this->getMockRequest($responses);
+  }
+
+  protected function addMockResponse($responseBody) {
+    $this->mockHandler->append(new Response(200, [], $responseBody));
+  }
+
+  /**
+   * Set up the mock client to imitate a success result.
+   *
+   * @param bool $isFirst
+   * @return Client
+   */
+  protected function setupSuccessfulWebTrackingDownloadClient(bool $isFirst = TRUE): Client {
+    $responses = [
+      file_get_contents(__DIR__ . '/Responses/WebTrackingDataExportResponse.txt'),
+      file_get_contents(__DIR__ . '/Responses/JobStatusCompleteResponse.txt'),
+    ];
+    if (!$isFirst) {
+      unset($responses[0]);
+    }
+    //Raw Recipient Data Export Jul 02 2017 21-46-49 PM 758.zip
+    copy(__DIR__ . '/Responses/Web Tracking Data Export Dec 30 2024 00-27-51 AM 901.csv', sys_get_temp_dir() . '/Web Tracking Data Export Dec 30 2024 00-27-51 AM 901.csv');
+    fopen(sys_get_temp_dir() . '/Web Tracking Data Export Dec 30 2024 00-27-51 AM 901.csv.complete', 'c');
     return $this->getMockRequest($responses);
   }
 
@@ -153,7 +208,7 @@ class OmnimailBaseTestClass extends TestCase {
    *
    * @param array $values
    */
-  protected function createSetting($values) {
+  protected function createSetting(array $values): void {
     foreach (['last_timestamp', 'progress_end_timestamp'] as $dateField) {
       if (!empty($values[$dateField])) {
         $values[$dateField] = gmdate('YmdHis', $values[$dateField]);
@@ -174,8 +229,8 @@ class OmnimailBaseTestClass extends TestCase {
    *
    * @return array
    */
-  public function getUtcDateFormattedJobSettings($params = ['mail_provider' => 'Silverpop']): array {
-    $settings = $this->getJobSettings($params);
+  public function getUtcDateFormattedJobSettings($params = []): array {
+    $settings = $this->getJobSettings($params + ['mail_provider' => 'Silverpop']);
     $dateFields = ['last_timestamp', 'progress_end_timestamp'];
     foreach ($dateFields as $dateField) {
       if (!empty($settings[$dateField])) {
@@ -193,7 +248,7 @@ class OmnimailBaseTestClass extends TestCase {
     $this->callAPISuccess('Mailing', 'create', ['campaign_id' => 'xyz', 'hash' => 'xyz', 'name' => 'Mail Unit Test']);
 
     $this->callAPISuccess('MailingProviderData', 'create', [
-      'contact_id' => $this->contactIDs['charlie_clone'],
+      'contact_id' => $this->ids['Contact']['charlie_clone'],
       'email' => 'charlie@example.com',
       'event_type' => 'Opt Out',
       'mailing_identifier' => 'xyz',
@@ -201,7 +256,7 @@ class OmnimailBaseTestClass extends TestCase {
       'contact_identifier' => 'a',
     ]);
     $this->callAPISuccess('MailingProviderData', 'create', [
-      'contact_id' => $this->contactIDs['marie'],
+      'contact_id' => $this->ids['Contact']['marie'],
       'event_type' => 'Open',
       'email' => 'bob@example.com',
       'mailing_identifier' => 'xyz',
@@ -209,14 +264,14 @@ class OmnimailBaseTestClass extends TestCase {
       'contact_identifier' => 'b',
     ]);
     $this->callAPISuccess('MailingProviderData', 'create', [
-      'contact_id' => $this->contactIDs['isaac'],
+      'contact_id' => $this->ids['Contact']['isaac'],
       'event_type' => 'Suppressed',
       'mailing_identifier' => 'xyuuuz',
       'recipient_action_datetime' => '2017-04-04',
       'contact_identifier' => 'c',
     ]);
     $this->callAPISuccess('MailingProviderData', 'create', [
-      'contact_id' => $this->contactIDs['isaac'],
+      'contact_id' => $this->ids['Contact']['isaac'],
       'email' => 'charlie@example.com',
       'event_type' => 'Hard Bounce',
       'mailing_identifier' => 'xyuuuz',
@@ -241,36 +296,32 @@ class OmnimailBaseTestClass extends TestCase {
     \CRM_Queue_Service::singleton(TRUE);
   }
 
-  protected function makeScientists() {
-    $contact = $this->callAPISuccess('Contact', 'create', [
+  protected function makeScientists(): void {
+    $this->createTestEntity('Contact', [
       'first_name' => 'Charles',
       'last_name' => 'Darwin',
       'contact_type' => 'Individual',
-    ]);
-    $this->contactIDs['charlie'] = $contact['id'];
-    $contact = $this->callAPISuccess('Contact', 'create', [
+    ], 'charlie');
+
+    $this->createTestEntity('Contact', [
       'first_name' => 'Charlie',
       'last_name' => 'Darwin',
       'contact_type' => 'Individual',
-      'api.email.create' => [
-        'is_bulkmail' => 1,
-        'email' => 'charlie@example.com',
-      ],
-    ]);
-    $this->contactIDs['charlie_clone'] = $contact['id'];
+      'email_primary.email' => 'charlie@example.com',
+      'email_primary.is_bulkmail' => 1,
+    ], 'charlie_clone');
 
-    $contact = $this->callAPISuccess('Contact', 'create', [
+    $this->createTestEntity('Contact', [
       'first_name' => 'Marie',
       'last_name' => 'Currie',
       'contact_type' => 'Individual',
-    ]);
-    $this->contactIDs['marie'] = $contact['id'];
-    $contact = $this->callAPISuccess('Contact', 'create', [
+    ], 'marie');
+
+    $this->createTestEntity('Contact', [
       'first_name' => 'Isaac',
       'last_name' => 'Newton',
       'contact_type' => 'Individual',
-    ]);
-    $this->contactIDs['isaac'] = $contact['id'];
+    ], 'isaac');
   }
 
   /**
@@ -278,8 +329,8 @@ class OmnimailBaseTestClass extends TestCase {
    *
    * @param int $connectionCount
    */
-  protected function setUpForErase($connectionCount = 1) {
-    $files = ['/Responses/AuthenticateRestResponse.txt'];
+  protected function setUpForErase(int $connectionCount = 1): void {
+    $files = [];
     $i = 0;
     while ($i < $connectionCount) {
       // These files consist of the Authenticate request and the 'status pending'.
@@ -296,7 +347,6 @@ class OmnimailBaseTestClass extends TestCase {
       );
       $i++;
     }
-    $files[] = '/Responses/LogoutResponse.txt';
 
     $this->createMockHandlerForFiles($files);
     $this->setUpClientWithHistoryContainer();
@@ -305,9 +355,8 @@ class OmnimailBaseTestClass extends TestCase {
   /**
    * Set up the mock handler for an erase request.
    */
-  protected function setUpForEraseFollowUpSuccess() {
+  protected function setUpForEraseFollowUpSuccess(): void {
     $files = [
-      '/Responses/AuthenticateRestResponse.txt',
       '/Responses/Privacy/EraseInProgressResponse.txt',
       '/Responses/Privacy/EraseSuccessResponse.txt',
     ];
@@ -339,9 +388,9 @@ class OmnimailBaseTestClass extends TestCase {
    * civicrm.settings.php or, in our case, in fundraising-dev/config/civicrm/settings.d
    *
    * @param string $setting
-   * @param array $temporarySettings
+   * @param mixed $temporarySettings
    */
-  protected function setSetting(string $setting, array $temporarySettings): void {
+  protected function setSetting(string $setting, $temporarySettings): void {
     $this->existingSettings[$setting] = Civi::settings()->get($setting);
     Civi::settings()->set($setting, $temporarySettings);
     // Settings stored in the global are 'mandatory' - ie override the db.
@@ -359,7 +408,7 @@ class OmnimailBaseTestClass extends TestCase {
    * here so trying a new tactic  - basically setting it up on the singleton
    * first.
    */
-  protected function addTestClientToRestSingleton() {
+  protected function addTestClientToRestSingleton(): void {
     $restConnector = SilverpopRestConnector::getInstance();
     $this->setUpClientWithHistoryContainer();
     $restConnector->setClient($this->getGuzzleClient());
@@ -374,8 +423,27 @@ class OmnimailBaseTestClass extends TestCase {
    */
   protected function addTestClientToXMLSingleton(): void {
     /** @var SilverpopXmlConnector $connector */
-    $connector = SilverpopGuzzleXmlConnector::getInstance();
+    $connector = SilverpopXmlConnector::getInstance();
     $connector->setClient($this->getGuzzleClient());
+  }
+
+
+  /**
+   * @param string $snoozeDate
+   *
+   * @return array
+   */
+  public function createSnoozyDuck(string $snoozeDate): array {
+    // These values are passed into the api call in other tests. But, because in this
+    // case the hook queues up the database update we need a more 'global' approach.
+    $this->setDatabaseID(1234);
+    return $this->createTestEntity('Contact', [
+      'contact_type' => 'Individual',
+      'first_name' => 'Donald',
+      'last_name' => 'Duck',
+      'email_primary.email' => 'the_don@example.com',
+      'email_primary.email_settings.snooze_date' => $snoozeDate,
+    ], 'snoozy');
   }
 
 }

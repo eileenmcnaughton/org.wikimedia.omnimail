@@ -186,8 +186,6 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass {
     for ($i = 0; $i < 15; $i++) {
       $responses[] = file_get_contents(__DIR__ . '/Responses/JobStatusWaitingResponse.txt');
     }
-    $responses[] = file_get_contents(__DIR__ . '/Responses/LogoutResponse.txt');
-    $this->callAPISuccess('setting', 'create', ['omnimail_job_retry_interval' => 0.01]);
     $this->callAPISuccess('Omnirecipient', 'load', ['mail_provider' => 'Silverpop', 'username' => 'Donald', 'password' => 'Duck', 'client' => $this->getMockRequest($responses)]);
     $this->assertEquals(0, CRM_Core_DAO::singleValueQuery('SELECT  count(*) FROM civicrm_mailing_provider_data'));
 
@@ -208,7 +206,7 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass {
    * @throws \CRM_Core_Exception
    */
   public function testCompleteIncomplete(): void {
-    $client = $this->setupSuccessfulDownloadClient('omnimail_omnirecipient_load');
+    $client = $this->setupSuccessfulDownloadClient('omnimail_omnirecipient_load', FALSE);
     $now = time();
     $this->createSetting([
       'job' => 'omnimail_omnirecipient_load',
@@ -237,7 +235,7 @@ class OmnirecipientLoadTest extends OmnimailBaseTestClass {
    * @throws \CRM_Core_Exception
    */
   public function testCompleteIncompleteUseSuffix(): void {
-    $client = $this->setupSuccessfulDownloadClient('omnimail_omnirecipient_load');
+    $client = $this->setupSuccessfulDownloadClient('omnimail_omnirecipient_load', FALSE);
     $this->createSetting([
       'job' => 'omnimail_omnirecipient_load',
       'mailing_provider' => 'Silverpop',

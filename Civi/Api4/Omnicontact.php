@@ -3,6 +3,7 @@ namespace Civi\Api4;
 
 use Civi\Api4\Action\Omnicontact\Upload;
 use Civi\Api4\Generic\BasicGetFieldsAction;
+use Civi\Api4\Action\Omnicontact\VerifySnooze;
 use Civi\Api4\Action\Omnicontact\Create;
 use Civi\Api4\Action\Omnicontact\Get;
 use Civi\Api4\Action\Omnicontact\Snooze;
@@ -59,6 +60,17 @@ class Omnicontact extends Generic\AbstractEntity {
       ->setCheckPermissions($checkPermissions);
   }
 
+  /**
+   * Audit that snoozed contacts are snoozed at Acoustic.
+   *
+   * @param bool $checkPermissions
+   *
+   * @return \Civi\Api4\Action\Omnicontact\VerifySnooze
+   */
+  public static function verifySnooze(bool $checkPermissions = TRUE): VerifySnooze {
+    return (new VerifySnooze(__CLASS__, __FUNCTION__))
+      ->setCheckPermissions($checkPermissions);
+  }
 
   /**
    * OmnimailJobProgress Check.

@@ -12,7 +12,7 @@ use Omnimail\Silverpop\Responses\Contact;
  */
 
 class CRM_Omnimail_Omnicontact extends CRM_Omnimail_Omnimail{
-
+  public const DUMMY_PHONE = 99999;
   /**
    * @var
    */
@@ -41,18 +41,18 @@ class CRM_Omnimail_Omnicontact extends CRM_Omnimail_Omnimail{
         'groupIdentifier' => array_keys($groupIdentifier),
         'email' => $email,
         'databaseID' => $params['database_id'],
-        'fields' => $this->mapFields($params['values']),
+        'fields' => $this->mapFields($params['values']) + ($snoozeEndDate ? ['snooze_end_date' => date('Y-m-d H:i:s', strtotime($snoozeEndDate))] : []),
         'snoozeTimeStamp' => empty($snoozeEndDate) ? NULL : strtotime($snoozeEndDate),
         'syncFields' => ['Email' => $email],
       ]);
-      /* @var Contact $reponse */
+      /* @var Contact $response */
       $response = $request->getResponse();
       $activityDetail = "Email $email was successfully snoozed till $snoozeEndDate";
       $activity_id = $params['values']['activity_id'] ?? NULL;
       if ($activity_id) {
         Activity::update(FALSE)
           ->addValue('status_id:name', 'Completed')
-          ->addValue('subject', "Email snoozed")
+          ->addValue('subject', "Email snoozed until " . date('Y-m-d', strtotime($snoozeEndDate)))
           ->addValue('details', $activityDetail)
           ->addWhere('id', '=', $activity_id)
           ->execute();
@@ -95,6 +95,7 @@ class CRM_Omnimail_Omnicontact extends CRM_Omnimail_Omnimail{
       'xmlFile' => $params['mapping_file'],
       'csvFile' => $params['csv_file'],
       'isAlreadyUploaded' => $params['is_already_uploaded'] ?? FALSE,
+      'timeout' => $params['timeout'],
     ]);
     /* @var \Omnimail\Silverpop\Responses\ImportListResponse $reponse */
     return $request->getResponse();
@@ -109,21 +110,22 @@ class CRM_Omnimail_Omnicontact extends CRM_Omnimail_Omnimail{
   public function get(array $params) {
     /* @var \Omnimail\Silverpop\Mailer $mailer */
     $mailer = Omnimail::create($params['mail_provider'], CRM_Omnimail_Helper::getCredentials($params));
-    if (empty($params['email'])) {
+    if (empty($params['email']) && !empty($params['contact_id'])) {
       $params['email'] = Email::get()
         ->addWhere('contact_id', '=', $params['contact_id'])
         ->addWhere('is_primary', '=', TRUE)
         ->addSelect('email')->execute()->first()['email'];
-    }
-    if (empty($params['email'])) {
-      throw new CRM_Core_Exception('Valid Contact ID or email not provided');
+      if (empty($params['email'])) {
+        throw new CRM_Core_Exception('Valid Contact ID or email not provided');
+      }
     }
     /* @var \Omnimail\Silverpop\Requests\SelectRecipientData $request */
     $request = $mailer->getContact([
       'groupIdentifier' => $params['group_identifier'],
-      'email' => $params['email'],
+      'email' => $params['email'] ?? '',
+      'recipient_id' => $params['recipient_id'],
       'databaseID' => $params['database_id'],
-      'syncFields' => ['Email' => $params['email']],
+      'syncFields' => $params['recipient_id'] ? ['recipient_id' => $params['recipient_id']] : ['Email' => $params['email']],
     ]);
     /* @var \Omnimail\Silverpop\Responses\Contact $reponse */
     try {
@@ -134,11 +136,33 @@ class CRM_Omnimail_Omnicontact extends CRM_Omnimail_Omnimail{
         'contact_identifier' => $response->getContactIdentifier(),
         'opt_in_date' => $response->getOptInIsoDateTime() ?: NULL,
         'opt_out_date' => $response->getOptOutIsoDateTime() ?: NULL,
-        'snooze_end_date' => $response->getSnoozeEndIsoDateTime() ?: NULL,
+        'snooze_end_date' => NULL,
+        'internal_system_snooze_end_date' => $response->getSnoozeEndIsoDateTime() ?: NULL,
+        'snooze_fields_match' => FALSE,
         'last_modified_date' => $response->getLastModifiedIsoDateTime()?: NULL,
         'url' => 'https://cloud.goacoustic.com/campaign-automation/Data/Databases?cuiOverrideSrc=https%253A%252F%252Fcampaign-us-4.goacoustic.com%252FsearchRecipient.do%253FisShellUser%253D1%2526action%253Dedit%2526listId%253D9644238%2526recipientId%253D' . $response->getContactIdentifier() . '&listId=' . $params['database_id'],
       ];
-      return array_merge($return, $response->getFields());
+      $return = array_merge($return, $response->getFields());
+      if (!empty($return['mobile_phone'])) {
+        /* @var \Omnimail\Silverpop\Responses\Consent $consent */
+        $consent = $mailer->consentInformationRequest([
+          'database_id' => $params['database_id'],
+          'short_code' => $this->getCampaignID(),
+          'phone' => $return['mobile_phone'],
+        ])->getResponse();
+        $return['sms_consent_status'] = $consent->getStatus();
+        $return['sms_consent_source'] = $consent->getSource();
+        $return['sms_consent_timestamp'] = $consent->getTimestamp();
+        $return['sms_consent_datetime'] = $consent->getTimestamp() ? date('Y-m-d H:i:s', $consent->getTimestamp()) : NULL;
+      }
+      else {
+        $return['sms_consent_status'] = NULL;
+        $return['sms_consent_source'] = NULL;
+        $return['sms_consent_timestamp'] = NULL;
+        $return['sms_consent_datetime'] = NULL;
+      }
+      $return['snooze_fields_match'] = ($return['snooze_end_date'] ?: FALSE) === ($return['internal_system_snooze_end_date'] ?: FALSE);
+      return $return;
     }
     catch (Exception $e) {
       throw new CRM_Core_Exception($e->getMessage());
@@ -170,6 +194,13 @@ class CRM_Omnimail_Omnicontact extends CRM_Omnimail_Omnimail{
       }
     }
     return $return;
+  }
+
+  /**
+   * @return string
+   */
+  public function getCampaignID(): string {
+    return \Civi::settings()->get('omnimail_sms_campaign_id');
   }
 
 }

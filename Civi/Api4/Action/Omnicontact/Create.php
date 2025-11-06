@@ -4,6 +4,7 @@ namespace Civi\Api4\Action\Omnicontact;
 use Civi\Api4\Generic\AbstractAction;
 use Civi\Api4\Generic\Result;
 use GuzzleHttp\Client;
+use CRM_Omnimail_ExtensionUtil as E;
 
 /**
  *  Class Check.
@@ -100,13 +101,31 @@ class Create extends AbstractAction {
       'email' => $this->getEmail(),
       'group_id' => $this->getGroupID(),
       'values' => $this->getValues(),
-      'snooze_end_date' => $this->getValues()['snooze_end_date'] ?? NULL,
+      'snooze_end_date' => $this->getSnoozeDate(),
       'check_permissions' => $this->getCheckPermissions(),
     ]);
   }
 
   public function fields(): array {
-    return [];
+    return [
+      [
+        'name' => 'snooze_end_date',
+        'required' => FALSE,
+        'description' => E::ts('Snooze End Date'),
+        'data_type' => 'Datetime',
+      ],
+    ];
+  }
+
+  /**
+   * @return mixed|null
+   */
+  public function getSnoozeDate(): mixed {
+    $snoozeDate = $this->getValues()['snooze_end_date'] ?? NULL;
+    if ($snoozeDate && strtotime($snoozeDate) < time()) {
+      $snoozeDate = NULL;
+    }
+    return $snoozeDate;
   }
 
 }
