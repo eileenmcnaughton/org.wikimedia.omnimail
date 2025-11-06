@@ -1,10 +1,33 @@
+# Omnimail for CiviCRM
+
+<!-- Anchor for external links -->
+<a id="api-reference"></a>
+
 This extension exposes external mailing providers to CiviCRM. It was intended
 to be generic enough to support the addition of more functionality and providers.
 However, over time the likelihood of other providers has dwindled and it
 has added functionality that is only appropriate to Acoustic.
 
+## Table of contents
+- [Supported providers](#supported-providers)
+- [Functionality](#functionality)
+- [Dependencies](#dependencies)
+- [Data storage](#data-storage)
+- [APIs](#api-reference) (direct link to the full API table)
+- [Viewing data](#viewing-data)
+
+## Supported providers {#supported-providers}
+<details>
+<summary>Click to expand</summary>
+
 *Currently supported:*
 - Acoustic (formerly Silverpop)
+
+</details>
+
+## Functionality {#functionality}
+<details>
+<summary>Click to expand</summary>
 
 *Currently supported Functionality*
 - Retrieval of mailings from provider & storage in CiviCRM
@@ -12,25 +35,21 @@ has added functionality that is only appropriate to Acoustic.
 - Updating individual contacts (limited but notably Snooze functionality)
 - Retrieving per contact details from Acoustic
 
-*Dependencies*
--  This extension has an external dependency on my fork of
-[Extended Mailing Statistics CiviCRM](https://github.com/eileenmcnaughton/au.org.greens.extendedmailingstats)
-At some point we should fold that into this extension as it is not
-separately maintained.
+</details>
 
+## Dependencies {#dependencies}
+<details>
+<summary>Click to expand</summary>
+
+-  This extension has an external dependency on my fork of
+   [Extended Mailing Statistics CiviCRM](https://github.com/eileenmcnaughton/au.org.greens.extendedmailingstats)
+   At some point we should fold that into this extension as it is not
+   separately maintained.
 - The extension has internal dependencies on 3 composer packages
 1. [Omnimail](https://github.com/gabrielbull/omnimail)
-
   Omnimail is a package that exposes multiple mailers in a standardised way.
-  The focus of Omnimail was on sending individual mails.
-  I discussed with the maintainer & he was open to adding interaction with bulk mailings so
-  I worked with him to add a factory class. Pending his consideration of open PRs
-  this factory class wrapper is the main thing Omnimail is currently delivering. I have
-  proposed interfaces for Mailing & Recipients
-
-  However, I think collaborating towards a standardised interface is a good thing going forwards.
-  In addition I think we could wind up implementing sending of mailings and that would
-  leverage the interfaces in that class much more. I currently have [a PR open against the repo](https://github.com/gabrielbull/omnimail/pull/27)
+  The focus of Omnimail was on sending individual mails. We have extended that
+  to cover Acoustic but are probably the only users now.
 
 2. [Omnimail-silverpop](https://github.com/eileenmcnaughton/omnimail-silverpop)
 
@@ -38,23 +57,24 @@ separately maintained.
   standardisation of Omnimail & the underlying silverpop integration package.
 
 3. [Silverpop-php-connector](https://github.com/mrmarkfrench/silverpop-php-connector)
-  This extension exposes most of the Silverpop apis.
 
-*Data storage*
+</details>
+
+## Data storage {#data-storage}
+<details>
+<summary>Click to expand</summary>
+
 This extension stores data retrieved in the following places:
-1. `civicrm_mailing table` (e.g html & text of emails)
-2. `civicrm_mailing_stats` table - statistics about emails - provided by extendedmailingstats extension
-3. `civicrm_mailing_provider_data` - provided by this extension, stores data about mailing recipient
-   actions (e.g contact x was sent a mailing on date y or contact z opened a mailing on date u)
-4. `civicrm_activity table` - separate jobs offer the chance to transfer mailing_provider_data to
-   activities. Depending on size this may only be done for some of the data.
-5. `civicrm_campaign` - when retrieving mailings a campaign is created for each of them. The
-   campaigns can be custom-data-extended for putting extra information on reports. In addition
-   both contributions & activities (& even recurring contributions)can be linked to campaigns, providing
-   good reporting options.
+1. `civicrm_mailing` table (e.g., HTML & text of emails)
+2. `civicrm_mailing_stats` table — statistics about emails — provided by extendedmailingstats extension
+3. `civicrm_mailing_provider_data` — provided by this extension, stores data about mailing recipient actions (e.g., contact x was sent a mailing on date y or contact z opened a mailing on date u)
+4. `civicrm_activity` table — separate jobs offer the chance to transfer mailing_provider_data to activities. Depending on size this may only be done for some of the data.
+5. `civicrm_campaign` — when retrieving mailings a campaign is created for each of them. The campaigns can be custom-data-extended for putting extra information on reports. In addition both contributions & activities (& even recurring contributions) can be linked to campaigns, providing good reporting options.
+
+</details>
 
 ## 🔧 APIs
-
+<!-- The anchor above this section is "api-reference" -->
 The main way to use this extension is by scheduling API calls.
 Both **v3** and **v4** endpoints are exposed and documented below.
 
@@ -87,18 +107,22 @@ Most v4 actions also accept:
 - `mail_provider` (default `"Silverpop"`)
 - `database_id` (auto-resolved from settings if omitted)
 - `limit`, `offset` for batching
-- `client` (optional Guzzle client override primarily for unit tests)
+- `client` (optional Guzzle client override)
 
 Example:
 ```bash
-cv api3 omnimailing.load mailing_provider=Silverpop username=xxx password=yyy
+drush cvapi omnimailing.load mailing_provider=Silverpop username=xxx password=yyy
 cv api4 OmniContact.upload csv_file=/tmp/contacts.csv
 ```
 
-*Viewing Data*
+## Viewing data {#viewing-data}
+<details>
+<summary>Click to expand</summary>
 
 The main ways to view data are:
-- report on mailings & statistics at civicrm/report/au.org.greens.extendedmailingstats/extendedmailingstats?reset=1
-- mysql queries on civicrm_mailing_provider_data table
-- activities created against contacts (depending which apis are scheduled)
-- viewing text & html downloaded into mailings.
+- report on mailings & statistics at `civicrm/report/au.org.greens.extendedmailingstats/extendedmailingstats?reset=1`
+- MySQL queries on `civicrm_mailing_provider_data` table
+- Activities created against contacts (depending which APIs are scheduled)
+- Viewing text & HTML downloaded into mailings
+
+</details>
