@@ -1,7 +1,8 @@
 <?php
 namespace Civi\Api4\Action\Omnicontact;
 
-use Civi\Api4\Generic\AbstractAction;
+use Civi\Api4\Contact;
+use Civi\Api4\Generic\AbstractCreateAction;
 use Civi\Api4\Generic\Result;
 use GuzzleHttp\Client;
 use CRM_Omnimail_ExtensionUtil as E;
@@ -15,9 +16,11 @@ use CRM_Omnimail_ExtensionUtil as E;
  * @method $this setEmail(bool $email)
  * @method $this setRecipientID(?int $recipientID)
  * @method bool getEmail()
- * @method $this setValues(array $values)
- * @method array getValues()
  * @method array getGroupID()
+ * @method int getGroupIdentifier()
+ * @method $this setGroupIdentifier(array $groupIdentifier)
+ * @method int getContactID()
+ * @method $this setContactID(?int $contactID)
  * @method $this setMailProvider(string $mailProvider) Generally Silverpop....
  * @method string getMailProvider()
  * @method $this setClient(Client$client) Generally Silverpop....
@@ -25,7 +28,7 @@ use CRM_Omnimail_ExtensionUtil as E;
  *
  * @package Civi\Api4
  */
-class Create extends AbstractAction {
+class Create extends AbstractCreateAction {
 
   /**
    * @var object
@@ -38,25 +41,37 @@ class Create extends AbstractAction {
   protected $groupID;
 
   /**
-   * @var string
+   * Acoustic contact lists ids to add the contact to,
+   * in addition those for the groups above.
+   *
+   * @var array
+   */
+  protected $groupIdentifier = [];
+
+  /**
+   * @var string|null
    */
   protected $email;
+
+  /**
+   * Contact ID.
+   *
+   * Used to look up the email.
+   *
+   * @var int|null
+   */
+  protected ?int $contactID = NULL;
 
   /**
    * Acoustic recipient ID.
    *
    * @var int|null
    */
-  protected ?int $recipientID;
+  protected ?int $recipientID = NULL;
 
   public function getRecipientID(): ?int {
     return $this->recipientID;
   }
-
-  /**
-   * @var array
-   */
-  protected $values = [];
 
   /**
    *
@@ -106,6 +121,12 @@ class Create extends AbstractAction {
     $omniObject = new \CRM_Omnimail_Omnicontact([
       'mail_provider' => $this->getMailProvider(),
     ]);
+    if (!$this->getEmail() && $this->getContactID()) {
+      $this->email = Contact::get(FALSE)
+        ->addWhere('id', '=', $this->getContactID())
+        ->addSelect('email_primary.email')
+        ->execute()->first()['email_primary.email'] ?? NULL;
+    }
     $result[] = $omniObject->create([
       'client' => $this->getClient(),
       'mail_provider' => $this->getMailProvider(),
@@ -116,16 +137,23 @@ class Create extends AbstractAction {
       'values' => $this->getValues(),
       'snooze_end_date' => $this->getSnoozeDate(),
       'check_permissions' => $this->getCheckPermissions(),
+      'groupIdentifier' => $this->getGroupIdentifier(),
     ]);
   }
 
-  public function fields(): array {
+  public function getFields(): array {
     return [
       [
         'name' => 'snooze_end_date',
         'required' => FALSE,
         'description' => E::ts('Snooze End Date'),
         'data_type' => 'Datetime',
+      ],
+      [
+        'name' => 'is_opt_out',
+        'required' => FALSE,
+        'description' => E::ts('Is Opt Out'),
+        'data_type' => 'Boolean',
       ],
     ];
   }
