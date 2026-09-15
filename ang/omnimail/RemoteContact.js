@@ -1,4 +1,4 @@
-(function(angular, $, _) {
+(function(angular, $) {
   angular.module('omnimail').config(function($routeProvider) {
     $routeProvider.when('/omnimail/remote-contact', {
       controller: 'OmnimailCtrl',
@@ -40,4 +40,4 @@
     this.remoteContact = remoteContact;
   });
 
-})(angular, CRM.$, CRM._);
+})(angular, CRM.$);
