@@ -1,4 +1,4 @@
-(function(angular, $, _) {
+(function(angular, $) {
 
   angular.module('omnimail').config(function($routeProvider) {
       $routeProvider.when('/omnimail/groupsync/', {
@@ -25,4 +25,4 @@
   });
 
 
-})(angular, CRM.$, CRM._);
+})(angular, CRM.$);
