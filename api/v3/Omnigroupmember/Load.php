@@ -42,56 +42,56 @@ function civicrm_api3_omnigroupmember_load($params) {
  * @param $params
  */
 function _civicrm_api3_omnigroupmember_load_spec(&$params) {
-  $params['username'] = array(
+  $params['username'] = [
     'title' => ts('User name'),
-  );
-  $params['password'] = array(
+  ];
+  $params['password'] = [
     'title' => ts('Password'),
-  );
-  $params['mail_provider'] = array(
+  ];
+  $params['mail_provider'] = [
     'title' => ts('Name of Mailer'),
     'api.required' => TRUE,
-  );
-  $params['start_date'] = array(
+  ];
+  $params['start_date'] = [
     'title' => ts('Date to fetch from'),
     'type' => CRM_Utils_Type::T_TIMESTAMP,
-  );
-  $params['end_date'] = array(
+  ];
+  $params['end_date'] = [
     'title' => ts('Date to fetch to'),
     'type' => CRM_Utils_Type::T_TIMESTAMP,
-  );
-  $params['group_identifier'] = array(
+  ];
+  $params['group_identifier'] = [
     'title' => ts('Identifier for the group'),
     'type' => CRM_Utils_Type::T_STRING,
     'api.required' => TRUE,
-  );
-  $params['retrieval_parameters'] = array(
+  ];
+  $params['retrieval_parameters'] = [
     'title' => ts('Additional information for retrieval of pre-stored requests'),
-  );
-  $params['is_opt_in_only'] = array(
+  ];
+  $params['is_opt_in_only'] = [
     'type' => CRM_Utils_Type::T_BOOLEAN,
     'title' => ts('Opted in contacts only'),
-    'description' => array('Restrict to opted in contacts'),
+    'description' => ['Restrict to opted in contacts'],
     'api.default' => 1,
-  );
+  ];
 
-  $params['throttle_number'] = array(
+  $params['throttle_number'] = [
     'title' => ts('Number of inserts to throttle after'),
     'type' => CRM_Utils_Type::T_INT,
     'api.default' => 5000,
-  );
+  ];
 
-  $params['throttle_seconds'] = array(
+  $params['throttle_seconds'] = [
     'title' => ts('Throttle after the number has been reached in this number of seconds'),
     'description' => ts('If the throttle limit is passed before this number of seconds is reached php will sleep until it hits it.'),
     'type' => CRM_Utils_Type::T_INT,
     'api.default' => 60,
-  );
-  $params['job_identifier'] = array(
+  ];
+  $params['job_identifier'] = [
     'title' => ts('An identifier string to add to job-specific settings.'),
     'description' => ts('The identifier allows for multiple settings to be stored for one job. For example if wishing to run an up-top-date job and a catch-up job'),
     'type' => CRM_Utils_Type::T_STRING,
     'api.default' => '',
-  );
+  ];
 
 }

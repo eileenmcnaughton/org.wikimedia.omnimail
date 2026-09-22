@@ -80,8 +80,8 @@ class CRM_Omnimail_Upgrader extends CRM_Extension_Upgrader_Base {
          PRIMARY KEY (`id`)
       ) ENGINE=InnoDB');
 
-    foreach (array('omnimail_omnigroupmembers_load', 'omnimail_omnirecipient_load') as $job) {
-      $settings = civicrm_api3('Setting', 'get', array('return' => $job));
+    foreach (['omnimail_omnigroupmembers_load', 'omnimail_omnirecipient_load'] as $job) {
+      $settings = civicrm_api3('Setting', 'get', ['return' => $job]);
       foreach ($settings['values'][CRM_Core_Config::domainId()][$job] as $mailingProvider => $setting) {
         $mailingProviderParts = explode('_', $mailingProvider);
         $jobIdentifier = isset($mailingProviderParts[1]) ? "'" . $mailingProviderParts[1] . "'" : 'NULL';

@@ -31,7 +31,7 @@ class OmnirecipientGetTest extends OmnimailBaseTestClass {
   public function testOmnirecipientGet() {
     $client = $this->setupSuccessfulDownloadClient();
 
-    $result = $this->callAPISuccess('Omnirecipient', 'get', array('mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => array('limit' => 3), 'client' => $client));
+    $result = $this->callAPISuccess('Omnirecipient', 'get', ['mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => ['limit' => 3], 'client' => $client]);
     $this->assertEquals(3, $result['count']);
     $this->assertEquals('bob@example.com', $result['values'][0]['email']);
     $this->assertEquals('123', $result['values'][0]['contact_id']);

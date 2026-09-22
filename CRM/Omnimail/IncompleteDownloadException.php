@@ -1,7 +1,7 @@
 <?php
 
 class CRM_Omnimail_IncompleteDownloadException extends CRM_Core_Exception {
-  private $errorData = array();
+  private $errorData = [];
 
   /**
    * Class constructor.
@@ -11,7 +11,7 @@ class CRM_Omnimail_IncompleteDownloadException extends CRM_Core_Exception {
    * @param array $errorData
    * @param null $previous
    */
-  public function __construct($message, $error_code = 0, $errorData = array(), $previous = NULL) {
+  public function __construct($message, $error_code = 0, $errorData = [], $previous = NULL) {
     parent::__construct($message);
     $this->errorData = $errorData;
   }

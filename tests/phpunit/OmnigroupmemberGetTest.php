@@ -33,7 +33,7 @@ class OmnigroupmemberGetTest extends OmnimailBaseTestClass {
   public function testOmnigroupmemberGet() {
     $client = $this->setupSuccessfulDownloadClient();
 
-    $result = civicrm_api3('Omnigroupmember', 'get', array('mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => array('limit' => 3), 'client' => $client, 'group_identifier' => 123));
+    $result = civicrm_api3('Omnigroupmember', 'get', ['mail_provider' => 'Silverpop', 'username' => 'Shrek', 'password' => 'Fiona', 'options' => ['limit' => 3], 'client' => $client, 'group_identifier' => 123]);
     $this->assertEquals(3, $result['count']);
     $this->assertEquals('eric@example.com', $result['values'][0]['email']);
     $this->assertEquals('', $result['values'][0]['contact_id']);
@@ -57,14 +57,14 @@ class OmnigroupmemberGetTest extends OmnimailBaseTestClass {
    */
   protected function setupSuccessfulDownloadClient(string $job = 'omnimail_omnigroupmembers_load', bool $isUpdateSetting = TRUE, string $fileName = '20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv'): Client {
 
-    $responses = array(
+    $responses = [
       file_get_contents(__DIR__ . '/Responses/ExportListResponse.txt'),
       file_get_contents(__DIR__ . '/Responses/JobStatusCompleteResponse.txt'),
-    );
+    ];
     copy(__DIR__ . '/Responses/' . $fileName, sys_get_temp_dir() . '/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv');
     fopen(sys_get_temp_dir() . '/20170509_noCID - All - Jul 5 2017 06-27-45 AM.csv.complete', 'c');
     if ($isUpdateSetting) {
-      $this->createSetting(array('job' => $job, 'mailing_provider' => 'Silverpop', 'last_timestamp' => '1487890800'));
+      $this->createSetting(['job' => $job, 'mailing_provider' => 'Silverpop', 'last_timestamp' => '1487890800']);
     }
     else {
       // In this case we are starting as it it has already started and do not need the first one ...

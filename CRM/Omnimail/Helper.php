@@ -37,9 +37,9 @@ class CRM_Omnimail_Helper {
         $credentials[$credentialKey] = $params[$credentialKey];
       }
     }
-    $mailerCredentials = array(
+    $mailerCredentials = [
       'credentials' => new Credentials($credentials)
-    );
+    ];
     if (!empty($params['client'])) {
       $mailerCredentials['client'] = $params['client'];
     }
@@ -58,7 +58,7 @@ class CRM_Omnimail_Helper {
    * @throws \CRM_Core_Exception
    */
   public static function getSettings() {
-    $settings = civicrm_api3('Setting', 'get', array('group' => 'omnimail'));
+    $settings = civicrm_api3('Setting', 'get', ['group' => 'omnimail']);
     self::$settings= reset($settings['values']);
     return self::$settings;
   }

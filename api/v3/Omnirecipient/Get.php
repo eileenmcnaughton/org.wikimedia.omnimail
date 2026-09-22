@@ -14,17 +14,17 @@ function civicrm_api3_omnirecipient_get($params) {
   $omnimail = new CRM_Omnimail_Omnirecipients($params);
   $result = $omnimail->getResult($params);
   $options = _civicrm_api3_get_options_from_params($params);
-  $values = array();
+  $values = [];
   foreach ($result as $row) {
     $recipient = new \Omnimail\Silverpop\Responses\Recipient($row);
-    $values[] = array(
+    $values[] = [
       'contact_identifier' => (string) $recipient->getContactIdentifier(),
       'mailing_identifier' => (string) ($params['mailing_prefix'] ?? '') . $recipient->getMailingIdentifier(),
       'email' => (string) $recipient->getEmail(),
       'event_type' => (string) $recipient->getRecipientAction(),
       'recipient_action_datetime' => (string) $recipient->getRecipientActionIsoDateTime(),
       'contact_id' => (string) $recipient->getContactReference(),
-    );
+    ];
     if ($options['limit'] > 0 && count($values) === (int) $options['limit']) {
       break;
     }
@@ -38,31 +38,31 @@ function civicrm_api3_omnirecipient_get($params) {
  * @param $params
  */
 function _civicrm_api3_omnirecipient_get_spec(&$params) {
-  $params['username'] = array(
+  $params['username'] = [
     'title' => ts('User name'),
-  );
-  $params['password'] = array(
+  ];
+  $params['password'] = [
     'title' => ts('Password'),
-  );
-  $params['mail_provider'] = array(
+  ];
+  $params['mail_provider'] = [
     'title' => ts('Name of Mailer'),
     'api.required' => TRUE,
-  );
-  $params['start_date'] = array(
+  ];
+  $params['start_date'] = [
     'title' => ts('Date to fetch from'),
     'api.default' => '3 days ago',
     'type' => CRM_Utils_Type::T_TIMESTAMP,
-  );
-  $params['end_date'] = array(
+  ];
+  $params['end_date'] = [
     'title' => ts('Date to fetch to'),
     'type' => CRM_Utils_Type::T_TIMESTAMP,
-  );
-  $params['mailing_external_identifier'] = array(
+  ];
+  $params['mailing_external_identifier'] = [
     'title' => ts('Identifier for the mailing'),
     'type' => CRM_Utils_Type::T_STRING,
-  );
-  $params['retrieval_parameters'] = array(
+  ];
+  $params['retrieval_parameters'] = [
     'title' => ts('Additional information for retrieval of pre-stored requests'),
-  );
+  ];
 
 }

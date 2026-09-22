@@ -28,53 +28,53 @@ function civicrm_api3_omnigroupmember_get($params) {
  * @param $params
  */
 function _civicrm_api3_omnigroupmember_get_spec(&$params) {
-  $params['username'] = array(
+  $params['username'] = [
     'title' => ts('User name'),
-  );
-  $params['password'] = array(
+  ];
+  $params['password'] = [
     'title' => ts('Password'),
-  );
-  $params['mail_provider'] = array(
+  ];
+  $params['mail_provider'] = [
     'title' => ts('Name of Mailer'),
     'api.required' => TRUE,
-  );
+  ];
   $params['timeout'] = [
     'title' => ts('Timeout'),
     'api.default' => 10.0,
   ];
-  $params['start_date'] = array(
+  $params['start_date'] = [
     'title' => ts('Date to fetch from'),
     'api.default' => '3 days ago',
     'type' => CRM_Utils_Type::T_TIMESTAMP,
-  );
-  $params['end_date'] = array(
+  ];
+  $params['end_date'] = [
     'title' => ts('Date to fetch to'),
     'type' => CRM_Utils_Type::T_TIMESTAMP,
-  );
-  $params['group_identifier'] = array(
+  ];
+  $params['group_identifier'] = [
     'title' => ts('Identifier for the group'),
     'type' => CRM_Utils_Type::T_STRING,
     'api.required' => TRUE,
-  );
-  $params['retrieval_parameters'] = array(
+  ];
+  $params['retrieval_parameters'] = [
     'title' => ts('Additional information for retrieval of pre-stored requests'),
-  );
-  $params['custom_data_map'] = array(
+  ];
+  $params['custom_data_map'] = [
     'type' => CRM_Utils_Type::T_STRING,
     'title' => ts('Custom fields map'),
-    'description' => array('custom mappings pertaining to the mail provider fields'),
-    'api.default' => array(
+    'description' => ['custom mappings pertaining to the mail provider fields'],
+    'api.default' => [
       'language' => 'rml_language',
       'source' => 'rml_source',
       'created_date' => 'rml_submitDate',
       'country' => 'rml_country',
-    ),
-  );
-  $params['is_opt_in_only'] = array(
+    ],
+  ];
+  $params['is_opt_in_only'] = [
     'type' => CRM_Utils_Type::T_BOOLEAN,
     'title' => ts('Opted in contacts only'),
-    'description' => array('Restrict to opted in contacts'),
+    'description' => ['Restrict to opted in contacts'],
     'api.default' => 1,
-  );
+  ];
 
 }
