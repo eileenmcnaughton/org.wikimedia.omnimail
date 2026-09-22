@@ -196,12 +196,12 @@ class Load extends Omniaction {
     foreach ($contacts as $row) {
       $contact = new Contact($row);
       if ($count === $limit) {
-        $job->saveJobSetting(array(
+        $job->saveJobSetting([
           'last_timestamp' => $jobSettings['last_timestamp'] ?? NULL,
           'retrieval_parameters' => $job->getRetrievalParameters(),
           'progress_end_timestamp' => $job->endTimeStamp,
           'offset' => $offset + $count,
-        ));
+        ]);
         // Do this here - ie. before processing a new row rather than at the end of the last row
         // to avoid thinking a job is incomplete if the limit co-incides with available rows.
         return;

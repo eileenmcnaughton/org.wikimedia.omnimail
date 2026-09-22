@@ -208,7 +208,7 @@ class CRM_Omnimail_Omnimail {
       foreach ($savedSettings['values'] as $savedSetting) {
         // filter for job_identifier since NULL will not have been respected.
         if (($savedSetting['job_identifier'] ?? NULL) === $this->job_identifier) {
-          foreach (array('last_timestamp', 'progress_end_timestamp') as $dateField) {
+          foreach (['last_timestamp', 'progress_end_timestamp'] as $dateField) {
             if (isset($savedSetting[$dateField])) {
               $savedSetting[$dateField] = strtotime($savedSetting[$dateField]);
             }
@@ -235,7 +235,7 @@ class CRM_Omnimail_Omnimail {
    */
   public function saveJobSetting($setting, string $loggingContext = '') {
     $setting = array_merge($this->jobSettings, $setting);
-    foreach (array('last_timestamp', 'progress_end_timestamp') as $dateField) {
+    foreach (['last_timestamp', 'progress_end_timestamp'] as $dateField) {
       if (isset($setting[$dateField]) && $setting[$dateField] !== 'null') {
         $setting[$dateField] = date('Y-m-d H:i:s', $setting[$dateField]);
       }

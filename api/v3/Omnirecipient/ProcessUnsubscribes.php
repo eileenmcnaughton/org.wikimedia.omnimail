@@ -16,9 +16,9 @@ require_once 'vendor/autoload.php';
  * @return array
  */
 function civicrm_api3_omnirecipient_process_unsubscribes($params) {
-  $params['return'] = array('mailing_identifier.campaign_id.name', 'email', 'contact_identifier', 'contact_id', 'mailing_identifier', 'recipient_action_datetime', 'event_type');
+  $params['return'] = ['mailing_identifier.campaign_id.name', 'email', 'contact_identifier', 'contact_id', 'mailing_identifier', 'recipient_action_datetime', 'event_type'];
   $params['is_civicrm_updated'] = 0;
-  $params['contact_id'] = array('BETWEEN' => [1, 999999999]);
+  $params['contact_id'] = ['BETWEEN' => [1, 999999999]];
   $result = civicrm_api3('MailingProviderData', 'get', $params);
 
   \Civi::log('wmf')->info('Unsubscribing {count} emails',[

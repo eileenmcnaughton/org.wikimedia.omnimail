@@ -64,11 +64,11 @@ class CRM_Omnimail_Omnirecipients extends CRM_Omnimail_Omnimail{
         sleep($settings['omnimail_job_retry_interval']);
       }
     }
-    throw new CRM_Omnimail_IncompleteDownloadException('Download incomplete', 0, array(
+    throw new CRM_Omnimail_IncompleteDownloadException('Download incomplete', 0, [
       'retrieval_parameters' => $this->getRetrievalParameters(),
       'mail_provider' => $params['mail_provider'],
       'end_date' => $this->endTimeStamp,
-    ));
+    ]);
 
   }
 
